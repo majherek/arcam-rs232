@@ -3,11 +3,14 @@ name = "arcam-rs232"
 version = "0.1.0"
 requires-python = ">=3.13"
 dependencies = [
+    "paho-mqtt>=2.1.0",
     "pyserial>=3.5",
+    "pyyaml>=6.0.2",
 ]
 
 [project.scripts]
 arcam = "arcam_rs232.cli:arcam"
+arcam-daemon = "arcam_rs232.daemon:arcam_daemon"
 arcam-rs232 = "arcam_rs232.cli:arcam"
 
 [build-system]

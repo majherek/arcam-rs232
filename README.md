@@ -70,6 +70,14 @@ The protocol code is also importable as a Python package for daemon or automatio
 from arcam_rs232 import ArcamDecoder, FrameReader, request_frame
 ```
 
+The MQTT daemon entry point is being developed on the daemon feature branch:
+
+```bash
+uv run arcam-daemon --config config.example.yaml --print-config
+```
+
+The command currently validates and prints normalized YAML configuration. MQTT runtime support is planned next.
+
 ## Basic Usage
 
 Sniff/listen on a serial port:
