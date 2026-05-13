@@ -48,13 +48,26 @@ pip install pyserial
 Run the tool:
 
 ```bash
+uv run arcam --help
+```
+
+The legacy wrapper remains available and runs the same CLI:
+
+```bash
 uv run python main.py --help
 ```
 
 Or, if dependencies are already installed:
 
 ```bash
+arcam --help
 python main.py --help
+```
+
+The protocol code is also importable as a Python package for daemon or automation integrations:
+
+```python
+from arcam_rs232 import ArcamDecoder, FrameReader, request_frame
 ```
 
 ## Basic Usage
@@ -62,37 +75,37 @@ python main.py --help
 Sniff/listen on a serial port:
 
 ```bash
-uv run python main.py --serial /dev/ttyUSB0
+uv run arcam --serial /dev/ttyUSB0
 ```
 
 Sniff/listen on a Windows serial port:
 
 ```bash
-uv run python main.py --serial COM3
+uv run arcam --serial COM3
 ```
 
 Connect through an RS232-to-Ethernet converter:
 
 ```bash
-uv run python main.py --host 192.168.1.50 --port 8899
+uv run arcam --host 192.168.1.50 --port 8899
 ```
 
 Print raw received chunks as hexadecimal bytes:
 
 ```bash
-uv run python main.py --serial /dev/ttyUSB0 --hex-dump
+uv run arcam --serial /dev/ttyUSB0 --hex-dump
 ```
 
 Output decoded frames as JSON:
 
 ```bash
-uv run python main.py --serial /dev/ttyUSB0 --format json
+uv run arcam --serial /dev/ttyUSB0 --format json
 ```
 
 Select a zone:
 
 ```bash
-uv run python main.py --serial /dev/ttyUSB0 --zone 0x02 --get power
+uv run arcam --serial /dev/ttyUSB0 --zone 0x02 --get power
 ```
 
 Zones are passed as integers, so both `2` and `0x02` are valid.
@@ -102,7 +115,7 @@ Zones are passed as integers, so both `2` and `0x02` are valid.
 You can decode captured frames without opening a serial or TCP connection:
 
 ```bash
-echo "0x21 0x01 0x0D 0x00 0x02 0x2D 0x05 0x0D" | uv run python main.py --decode-hex
+echo "0x21 0x01 0x0D 0x00 0x02 0x2D 0x05 0x0D" | uv run arcam --decode-hex
 ```
 
 Example output:
@@ -153,18 +166,18 @@ The response contains the answer code and returns the volume as integer plus fra
 Use `--get` for direct RS232 status requests:
 
 ```bash
-uv run python main.py --serial /dev/ttyUSB0 --get power
-uv run python main.py --serial /dev/ttyUSB0 --get source
-uv run python main.py --serial /dev/ttyUSB0 --get volume
-uv run python main.py --serial /dev/ttyUSB0 --get mute
-uv run python main.py --serial /dev/ttyUSB0 --get incoming-audio
-uv run python main.py --serial /dev/ttyUSB0 --get incoming-video
+uv run arcam --serial /dev/ttyUSB0 --get power
+uv run arcam --serial /dev/ttyUSB0 --get source
+uv run arcam --serial /dev/ttyUSB0 --get volume
+uv run arcam --serial /dev/ttyUSB0 --get mute
+uv run arcam --serial /dev/ttyUSB0 --get incoming-audio
+uv run arcam --serial /dev/ttyUSB0 --get incoming-video
 ```
 
 List all supported status request names:
 
 ```bash
-uv run python main.py --help
+uv run arcam --help
 ```
 
 ## Sniffer Mode
@@ -174,13 +187,13 @@ When no action command is provided, the tool stays connected and works as a snif
 Serial sniffer:
 
 ```bash
-uv run python main.py --serial /dev/ttyUSB0
+uv run arcam --serial /dev/ttyUSB0
 ```
 
 TCP sniffer:
 
 ```bash
-uv run python main.py --host 192.168.1.50 --port 8899
+uv run arcam --host 192.168.1.50 --port 8899
 ```
 
 Add `--hex-dump` when you also want to see raw RX chunks.
@@ -190,15 +203,15 @@ Add `--hex-dump` when you also want to see raw RX chunks.
 The most common controls have convenient aliases:
 
 ```bash
-uv run python main.py --serial /dev/ttyUSB0 --power on
-uv run python main.py --serial /dev/ttyUSB0 --power standby
-uv run python main.py --serial /dev/ttyUSB0 --source DVD
-uv run python main.py --serial /dev/ttyUSB0 --source "Tuner FM"
-uv run python main.py --serial /dev/ttyUSB0 --set-volume 45.5
-uv run python main.py --serial /dev/ttyUSB0 --volume-up
-uv run python main.py --serial /dev/ttyUSB0 --volume-down
-uv run python main.py --serial /dev/ttyUSB0 --mute on
-uv run python main.py --serial /dev/ttyUSB0 --mute off
+uv run arcam --serial /dev/ttyUSB0 --power on
+uv run arcam --serial /dev/ttyUSB0 --power standby
+uv run arcam --serial /dev/ttyUSB0 --source DVD
+uv run arcam --serial /dev/ttyUSB0 --source "Tuner FM"
+uv run arcam --serial /dev/ttyUSB0 --set-volume 45.5
+uv run arcam --serial /dev/ttyUSB0 --volume-up
+uv run arcam --serial /dev/ttyUSB0 --volume-down
+uv run arcam --serial /dev/ttyUSB0 --mute on
+uv run arcam --serial /dev/ttyUSB0 --mute off
 ```
 
 Important details:
@@ -213,7 +226,7 @@ Important details:
 Use `--dry-run` to print the generated transmit frame without opening serial or TCP:
 
 ```bash
-uv run python main.py --dry-run --power on
+uv run arcam --dry-run --power on
 ```
 
 Output:
@@ -225,11 +238,11 @@ Output:
 More examples:
 
 ```bash
-uv run python main.py --dry-run --set-volume 45.5
-uv run python main.py --dry-run --source NET
-uv run python main.py --dry-run --mute off
-uv run python main.py --dry-run --set video-output 1080p
-uv run python main.py --dry-run --rc5 volume-up
+uv run arcam --dry-run --set-volume 45.5
+uv run arcam --dry-run --source NET
+uv run arcam --dry-run --mute off
+uv run arcam --dry-run --set video-output 1080p
+uv run arcam --dry-run --rc5 volume-up
 ```
 
 ## Direct RS232 Settings
@@ -237,19 +250,19 @@ uv run python main.py --dry-run --rc5 volume-up
 Some options can be set directly with documented RS232 commands:
 
 ```bash
-uv run python main.py --serial /dev/ttyUSB0 --set video-output 1080p
-uv run python main.py --serial /dev/ttyUSB0 --set video-input hdmi
-uv run python main.py --serial /dev/ttyUSB0 --set audio-input digital
-uv run python main.py --serial /dev/ttyUSB0 --set room-eq on
-uv run python main.py --serial /dev/ttyUSB0 --set dolby-volume movie
-uv run python main.py --serial /dev/ttyUSB0 --set lipsync-delay 50
-uv run python main.py --serial /dev/ttyUSB0 --set subwoofer-trim -2.5
+uv run arcam --serial /dev/ttyUSB0 --set video-output 1080p
+uv run arcam --serial /dev/ttyUSB0 --set video-input hdmi
+uv run arcam --serial /dev/ttyUSB0 --set audio-input digital
+uv run arcam --serial /dev/ttyUSB0 --set room-eq on
+uv run arcam --serial /dev/ttyUSB0 --set dolby-volume movie
+uv run arcam --serial /dev/ttyUSB0 --set lipsync-delay 50
+uv run arcam --serial /dev/ttyUSB0 --set subwoofer-trim -2.5
 ```
 
 List supported direct settings and accepted values:
 
 ```bash
-uv run python main.py --list-set
+uv run arcam --list-set
 ```
 
 Many settings accept `request`, `up`, `down`, `inc`, or `dec` when those values are documented by Arcam.
@@ -259,10 +272,10 @@ Many settings accept `request`, `up`, `down`, `inc`, or `dec` when those values 
 Display brightness command `0x01` is request-only. Use `--get display-brightness` to read it, or RC5 aliases to emulate the front-panel/remote display brightness commands:
 
 ```bash
-uv run python main.py --serial /dev/ttyUSB0 --rc5 display-off
-uv run python main.py --serial /dev/ttyUSB0 --rc5 display-l1
-uv run python main.py --serial /dev/ttyUSB0 --rc5 display-l2
-uv run python main.py --serial /dev/ttyUSB0 --rc5 display-l3
+uv run arcam --serial /dev/ttyUSB0 --rc5 display-off
+uv run arcam --serial /dev/ttyUSB0 --rc5 display-l1
+uv run arcam --serial /dev/ttyUSB0 --rc5 display-l2
+uv run arcam --serial /dev/ttyUSB0 --rc5 display-l3
 ```
 
 Value formats used by direct settings:
@@ -275,12 +288,12 @@ Value formats used by direct settings:
 Examples:
 
 ```bash
-uv run python main.py --serial /dev/ttyUSB0 --set bass -2
-uv run python main.py --serial /dev/ttyUSB0 --set treble 3
-uv run python main.py --serial /dev/ttyUSB0 --set balance -4
-uv run python main.py --serial /dev/ttyUSB0 --set brightness up
-uv run python main.py --serial /dev/ttyUSB0 --set subwoofer-trim -2.5
-uv run python main.py --serial /dev/ttyUSB0 --set lipsync-delay 50
+uv run arcam --serial /dev/ttyUSB0 --set bass -2
+uv run arcam --serial /dev/ttyUSB0 --set treble 3
+uv run arcam --serial /dev/ttyUSB0 --set balance -4
+uv run arcam --serial /dev/ttyUSB0 --set brightness up
+uv run arcam --serial /dev/ttyUSB0 --set subwoofer-trim -2.5
+uv run arcam --serial /dev/ttyUSB0 --set lipsync-delay 50
 ```
 
 ## RC5 Emulation
@@ -306,23 +319,23 @@ In text mode, the tool prints `RC5 acknowledgement: OK` when this acknowledgemen
 Use a named RC5 alias:
 
 ```bash
-uv run python main.py --serial /dev/ttyUSB0 --rc5 power-on
-uv run python main.py --serial /dev/ttyUSB0 --rc5 volume-up
-uv run python main.py --serial /dev/ttyUSB0 --rc5 source-dvd
-uv run python main.py --serial /dev/ttyUSB0 --rc5 menu
-uv run python main.py --serial /dev/ttyUSB0 --rc5 ok
+uv run arcam --serial /dev/ttyUSB0 --rc5 power-on
+uv run arcam --serial /dev/ttyUSB0 --rc5 volume-up
+uv run arcam --serial /dev/ttyUSB0 --rc5 source-dvd
+uv run arcam --serial /dev/ttyUSB0 --rc5 menu
+uv run arcam --serial /dev/ttyUSB0 --rc5 ok
 ```
 
 List all known RC5 aliases:
 
 ```bash
-uv run python main.py --list-rc5
+uv run arcam --list-rc5
 ```
 
 Send a raw RC5 system/command pair:
 
 ```bash
-uv run python main.py --serial /dev/ttyUSB0 --rc5-code 0x10 0x7B
+uv run arcam --serial /dev/ttyUSB0 --rc5-code 0x10 0x7B
 ```
 
 This generates a `0x08` frame with two data bytes:
@@ -336,7 +349,7 @@ This generates a `0x08` frame with two data bytes:
 For testing or unsupported commands, send a raw frame:
 
 ```bash
-uv run python main.py --serial /dev/ttyUSB0 --send-hex "0x21 0x01 0x0D 0x01 0xF0 0x0D"
+uv run arcam --serial /dev/ttyUSB0 --send-hex "0x21 0x01 0x0D 0x01 0xF0 0x0D"
 ```
 
 This sends the bytes exactly as provided and then listens for responses for the configured wait window.
@@ -353,13 +366,13 @@ For a USR-DR132 or similar RS232-to-Ethernet converter:
 4. Connect with:
 
 ```bash
-uv run python main.py --host 192.168.1.50 --port 8899
+uv run arcam --host 192.168.1.50 --port 8899
 ```
 
 Send a command through TCP:
 
 ```bash
-uv run python main.py --host 192.168.1.50 --port 8899 --power on
+uv run arcam --host 192.168.1.50 --port 8899 --power on
 ```
 
 ## Decoded Status Coverage

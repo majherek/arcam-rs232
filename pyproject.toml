@@ -5,3 +5,11 @@ requires-python = ">=3.13"
 dependencies = [
     "pyserial>=3.5",
 ]
+
+[project.scripts]
+arcam = "arcam_rs232.cli:arcam"
+arcam-rs232 = "arcam_rs232.cli:arcam"
+
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
