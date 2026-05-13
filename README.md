@@ -192,6 +192,9 @@ included GitHub Actions workflow:
 
 ```text
 ghcr.io/<owner>/arcam-rs232:latest
+ghcr.io/<owner>/arcam-rs232:v0.1.5
+ghcr.io/<owner>/arcam-rs232:0.1.5
+ghcr.io/<owner>/arcam-rs232:0.1
 ghcr.io/<owner>/arcam-rs232:<git-sha>
 ```
 
@@ -199,6 +202,35 @@ Example:
 
 ```bash
 docker pull ghcr.io/majherek/arcam-rs232:latest
+docker pull ghcr.io/majherek/arcam-rs232:v0.1.5
+```
+
+The Docker image is built from the Python wheel produced by `uv build`, then the
+wheel is installed into the runtime image. The Python distribution is still one
+package, `arcam-rs232`, and it installs multiple console scripts:
+
+```text
+arcam
+arcam-rs232
+arcam-daemon
+```
+
+`uv build` produces the normal Python distribution artifacts in `dist/`:
+
+```text
+arcam_rs232-<version>-py3-none-any.whl
+arcam_rs232-<version>.tar.gz
+```
+
+The `Python release artifacts` GitHub Actions workflow builds these artifacts
+and attaches them to GitHub Releases for version tags such as `v0.1.5`.
+
+Release checklist:
+
+```bash
+# update pyproject.toml version first
+git tag v0.1.5
+git push origin v0.1.5
 ```
 
 systemd example files are in `packaging/`:

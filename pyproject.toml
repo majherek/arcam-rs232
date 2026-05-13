@@ -16,3 +16,6 @@ arcam-rs232 = "arcam_rs232.cli:arcam"
 [build-system]
 requires = ["setuptools>=69"]
 build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["arcam_rs232"]
