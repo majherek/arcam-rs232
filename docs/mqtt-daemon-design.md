@@ -245,6 +245,18 @@ zone3 power on ack
 
 ## Command Handling
 
+The current daemon subscribes to the core command topics:
+
+```text
+arcam/<device_id>/zoneX/cmd/power
+arcam/<device_id>/zoneX/cmd/source
+arcam/<device_id>/zoneX/cmd/volume
+arcam/<device_id>/zoneX/cmd/mute
+```
+
+Retained MQTT command messages are ignored to avoid replaying old commands when
+the daemon reconnects.
+
 For every MQTT command:
 
 1. Check `status/device`.

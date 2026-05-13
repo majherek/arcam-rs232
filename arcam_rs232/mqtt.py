@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import ssl
 from dataclasses import dataclass
+from typing import Callable
 
 import paho.mqtt.client as mqtt
 
@@ -21,7 +22,9 @@ class PublishResult:
 class MqttBridge:
     def __init__(self, config: MqttConfig):
         self.config = config
+        self._subscriptions: dict[str, Callable[[mqtt.MQTTMessage], None]] = {}
         self.client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2, client_id=config.client_id)
+        self.client.on_message = self._on_message
         if config.username is not None:
             self.client.username_pw_set(config.username, config.password)
         if config.tls.enabled:
@@ -48,6 +51,10 @@ class MqttBridge:
         result.wait_for_publish()
         return PublishResult(topic=topic, payload=payload)
 
+    def subscribe(self, topic: str, callback: Callable[[mqtt.MQTTMessage], None]):
+        self._subscriptions[topic] = callback
+        self.client.subscribe(topic, qos=self.config.qos)
+
     def _configure_tls(self, config: MqttConfig):
         self.client.tls_set(
             ca_certs=config.tls.ca_file,
@@ -56,3 +63,8 @@ class MqttBridge:
             tls_version=ssl.PROTOCOL_TLS_CLIENT,
         )
         self.client.tls_insecure_set(config.tls.insecure)
+
+    def _on_message(self, client, userdata, message: mqtt.MQTTMessage):
+        for topic_filter, callback in self._subscriptions.items():
+            if mqtt.topic_matches_sub(topic_filter, message.topic):
+                callback(message)

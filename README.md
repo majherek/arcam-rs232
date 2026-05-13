@@ -99,8 +99,21 @@ arcam/av888/zone1/state/volume = 11.5
 arcam/av888/zone1/state/mute = muted|unmuted
 ```
 
-Command subscriptions are not implemented yet. State is published only from
-real ARCAM status frames/responses, not from RC5 acknowledgements.
+The daemon subscribes to the core command topics:
+
+```text
+arcam/av888/zone1/cmd/power = on|standby
+arcam/av888/zone1/cmd/source = AV|PVR|SAT|...
+arcam/av888/zone1/cmd/volume = 11.5
+arcam/av888/zone1/cmd/mute = on|off
+```
+
+Use the same topic shape for `zone2` and `zone3`. Zone power commands are
+accepted whenever the device is online. Other zone commands are accepted only
+when that zone's `state/power` is `on`.
+
+State is published only from real ARCAM status frames/responses, not from RC5
+acknowledgements.
 
 ## Basic Usage
 
