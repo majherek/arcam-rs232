@@ -360,9 +360,14 @@ core_refresh_seconds = 30
 burst_collection_seconds = 5
 ```
 
-The current runner sends `get power` to every enabled zone on each heartbeat, so
-zone power states stay fresh even when Zone 1 is in standby. A future profile may
-choose another harmless request if needed.
+The runner sends `get power` to Zone 1 on each heartbeat. This is enough to
+verify that the physical device is responding, without blocking the link with
+Zone 2/3 health checks. If Zone 1 is disabled in config, the first enabled zone
+is used as a fallback heartbeat target.
+
+During bootstrap and scan refreshes, queued MQTT commands are executed between
+individual ARCAM requests. User commands therefore take priority over slower
+extended state reads once enough zone state is known to validate them.
 
 When heartbeat fails repeatedly:
 

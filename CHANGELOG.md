@@ -13,6 +13,10 @@
   without waiting for the full configured bootstrap scan to finish.
 - Fixed command ACK handling so direct command acknowledgements do not update
   MQTT state when `update_state_from_ack` is disabled.
+- Give queued MQTT commands priority between bootstrap/scan requests, so slow
+  extended reads do not block user control for the full bootstrap duration.
+- Limit heartbeat polling to Zone 1 power, with a fallback to the first enabled
+  zone if Zone 1 is disabled.
 - Changed the OpenHAB volume control example to a slider capped at `50 dB`.
 - Added Docker troubleshooting notes for `docker logs`.
 

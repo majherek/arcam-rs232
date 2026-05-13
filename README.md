@@ -156,6 +156,10 @@ when that zone's `state/power` is `on`.
 State is published only from real ARCAM status frames/responses, not from RC5
 acknowledgements.
 
+During bootstrap and scan refreshes, MQTT commands are handled between
+individual ARCAM requests. This lets user commands take priority over slower
+extended state reads after the daemon has enough state to validate them.
+
 When a device is offline, reconnect attempts use exponential backoff:
 
 - `offline_retry_seconds`: first retry delay after a failed connection/bootstrap.

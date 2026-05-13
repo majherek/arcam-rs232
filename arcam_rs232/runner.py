@@ -132,13 +132,12 @@ class DeviceRunner:
                     spec.name,
                 )
                 seen = self._collect(transport, reader, self.device.transport.timeout_seconds) or seen
+                self._execute_pending_commands(transport, reader)
         return seen
 
     def _poll_power(self, transport, reader: FrameReader) -> bool:
         seen = False
-        for zone_name, zone in self.device.zones.items():
-            if not zone.enabled:
-                continue
+        for zone_name in self._heartbeat_zones():
             zone_id = _zone_number(zone_name)
             frame = request_frame(zone_id, 0x00)
             self._trace_tx(f"{zone_name}/power heartbeat", frame)
@@ -256,6 +255,14 @@ class DeviceRunner:
         if command.spec.burst_after_command:
             self._collect(transport, reader, self.device.polling.burst_collection_seconds)
 
+    def _execute_pending_commands(self, transport, reader: FrameReader):
+        while True:
+            try:
+                command = self.command_queue.get_nowait()
+            except Empty:
+                return
+            self._execute_command(transport, reader, command)
+
     def _command_allowed(self, command: "MqttCommand") -> bool:
         if not self.device.commands.reject_when_unavailable:
             return True
@@ -312,6 +319,15 @@ class DeviceRunner:
                 request.on_complete()
             except Exception:
                 LOGGER.exception("%s: scan completion callback failed", self.device.id)
+
+    def _heartbeat_zones(self) -> tuple[str, ...]:
+        zone1 = self.device.zones.get("zone1")
+        if zone1 is not None and zone1.enabled:
+            return ("zone1",)
+        for zone_name, zone in self.device.zones.items():
+            if zone.enabled:
+                return (zone_name,)
+        return ()
 
     def _trace_tx(self, label: str, frame: bytes):
         if self.protocol_trace:
