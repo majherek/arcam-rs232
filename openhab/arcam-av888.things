@@ -1,0 +1,81 @@
+Bridge mqtt:broker:mosquitto "Mosquitto MQTT Broker" [
+    host="mosquitto",
+    port=1883,
+    secure=false
+] {
+    Thing topic arcam_av888 "Arcam AV888" {
+        Channels:
+            Type string : daemon_status "Daemon Status" [
+                stateTopic="arcam/daemon"
+            ]
+            Type string : device_status "Device Status" [
+                stateTopic="arcam/av888/status/device"
+            ]
+
+            Type string : zone1_control "Zone 1 Control" [
+                stateTopic="arcam/av888/zone1/status/control"
+            ]
+            Type string : zone1_power "Zone 1 Power" [
+                stateTopic="arcam/av888/zone1/state/power",
+                commandTopic="arcam/av888/zone1/cmd/power"
+            ]
+            Type string : zone1_source "Zone 1 Source" [
+                stateTopic="arcam/av888/zone1/state/source",
+                commandTopic="arcam/av888/zone1/cmd/source"
+            ]
+            Type number : zone1_volume "Zone 1 Volume" [
+                stateTopic="arcam/av888/zone1/state/volume",
+                commandTopic="arcam/av888/zone1/cmd/volume"
+            ]
+            Type string : zone1_mute "Zone 1 Mute" [
+                stateTopic="arcam/av888/zone1/state/mute",
+                commandTopic="arcam/av888/zone1/cmd/mute"
+            ]
+            Type string : zone1_room_eq "Zone 1 Room EQ" [
+                stateTopic="arcam/av888/zone1/state/room_eq",
+                commandTopic="arcam/av888/zone1/cmd/room_eq"
+            ]
+            Type string : zone1_dolby_volume "Zone 1 Dolby Volume" [
+                stateTopic="arcam/av888/zone1/state/dolby_volume",
+                commandTopic="arcam/av888/zone1/cmd/dolby_volume"
+            ]
+            Type string : zone1_direct "Zone 1 Direct" [
+                stateTopic="arcam/av888/zone1/state/direct",
+                commandTopic="arcam/av888/zone1/cmd/direct"
+            ]
+            Type string : zone1_decode_2ch "Zone 1 Decode 2ch" [
+                stateTopic="arcam/av888/zone1/state/decode_2ch"
+            ]
+            Type string : zone1_decode_mch "Zone 1 Decode MCH" [
+                stateTopic="arcam/av888/zone1/state/decode_mch"
+            ]
+            Type string : zone1_incoming_audio "Zone 1 Incoming Audio" [
+                stateTopic="arcam/av888/zone1/state/incoming_audio"
+            ]
+            Type string : zone1_sample_rate "Zone 1 Sample Rate" [
+                stateTopic="arcam/av888/zone1/state/sample_rate"
+            ]
+            Type string : zone1_audio_input "Zone 1 Audio Input" [
+                stateTopic="arcam/av888/zone1/state/audio_input"
+            ]
+            Type string : zone1_video_input "Zone 1 Video Input" [
+                stateTopic="arcam/av888/zone1/state/video_input"
+            ]
+
+            Type string : zone2_control "Zone 2 Control" [
+                stateTopic="arcam/av888/zone2/status/control"
+            ]
+            Type string : zone2_power "Zone 2 Power" [
+                stateTopic="arcam/av888/zone2/state/power",
+                commandTopic="arcam/av888/zone2/cmd/power"
+            ]
+
+            Type string : zone3_control "Zone 3 Control" [
+                stateTopic="arcam/av888/zone3/status/control"
+            ]
+            Type string : zone3_power "Zone 3 Power" [
+                stateTopic="arcam/av888/zone3/state/power",
+                commandTopic="arcam/av888/zone3/cmd/power"
+            ]
+    }
+}

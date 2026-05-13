@@ -1,0 +1,23 @@
+String Arcam_Daemon_Status "Arcam daemon [%s]" { channel="mqtt:topic:mosquitto:arcam_av888:daemon_status" }
+String Arcam_AV888_Device_Status "AV888 device [%s]" { channel="mqtt:topic:mosquitto:arcam_av888:device_status" }
+
+String Arcam_AV888_Zone1_Control "Zone 1 control [%s]" { channel="mqtt:topic:mosquitto:arcam_av888:zone1_control" }
+String Arcam_AV888_Zone1_Power "Zone 1 power [%s]" { channel="mqtt:topic:mosquitto:arcam_av888:zone1_power" }
+String Arcam_AV888_Zone1_Source "Zone 1 source [%s]" { channel="mqtt:topic:mosquitto:arcam_av888:zone1_source" }
+Number Arcam_AV888_Zone1_Volume "Zone 1 volume [%.1f dB]" { channel="mqtt:topic:mosquitto:arcam_av888:zone1_volume" }
+String Arcam_AV888_Zone1_Mute "Zone 1 mute [%s]" { channel="mqtt:topic:mosquitto:arcam_av888:zone1_mute" }
+String Arcam_AV888_Zone1_Room_EQ "Room EQ [%s]" { channel="mqtt:topic:mosquitto:arcam_av888:zone1_room_eq" }
+String Arcam_AV888_Zone1_Dolby_Volume "Dolby Volume [%s]" { channel="mqtt:topic:mosquitto:arcam_av888:zone1_dolby_volume" }
+String Arcam_AV888_Zone1_Direct "Direct [%s]" { channel="mqtt:topic:mosquitto:arcam_av888:zone1_direct" }
+String Arcam_AV888_Zone1_Decode_2ch "Decode 2ch [%s]" { channel="mqtt:topic:mosquitto:arcam_av888:zone1_decode_2ch" }
+String Arcam_AV888_Zone1_Decode_MCH "Decode MCH [%s]" { channel="mqtt:topic:mosquitto:arcam_av888:zone1_decode_mch" }
+String Arcam_AV888_Zone1_Incoming_Audio "Incoming audio [%s]" { channel="mqtt:topic:mosquitto:arcam_av888:zone1_incoming_audio" }
+String Arcam_AV888_Zone1_Sample_Rate "Sample rate [%s]" { channel="mqtt:topic:mosquitto:arcam_av888:zone1_sample_rate" }
+String Arcam_AV888_Zone1_Audio_Input "Audio input [%s]" { channel="mqtt:topic:mosquitto:arcam_av888:zone1_audio_input" }
+String Arcam_AV888_Zone1_Video_Input "Video input [%s]" { channel="mqtt:topic:mosquitto:arcam_av888:zone1_video_input" }
+
+String Arcam_AV888_Zone2_Control "Zone 2 control [%s]" { channel="mqtt:topic:mosquitto:arcam_av888:zone2_control" }
+String Arcam_AV888_Zone2_Power "Zone 2 power [%s]" { channel="mqtt:topic:mosquitto:arcam_av888:zone2_power" }
+
+String Arcam_AV888_Zone3_Control "Zone 3 control [%s]" { channel="mqtt:topic:mosquitto:arcam_av888:zone3_control" }
+String Arcam_AV888_Zone3_Power "Zone 3 power [%s]" { channel="mqtt:topic:mosquitto:arcam_av888:zone3_power" }

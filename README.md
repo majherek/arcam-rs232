@@ -185,6 +185,19 @@ packaging/arcam-rs232.env.example
 Install your edited config as `/etc/arcam-rs232/config.yaml` and the environment
 file as `/etc/arcam-rs232/arcam-rs232.env`.
 
+## openHAB
+
+Example openHAB Generic MQTT files are in `openhab/`:
+
+```text
+openhab/arcam-av888.things
+openhab/arcam-av888.items
+openhab/arcam-av888.sitemap
+```
+
+They define AV888 status, Zone 1 controls and read-only audio state, plus Zone 2
+and Zone 3 power controls. The sitemap uses daemon/device/zone status visibility.
+
 ## Basic Usage
 
 Sniff/listen on a serial port:
