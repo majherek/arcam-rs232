@@ -75,10 +75,73 @@ devices:
         power_command_allowed_when_device_online: true
         core:
           - power
-        extended: []
+          - source
+          - mute
+        extended:
+          - audio-input
+          - sample-rate
 
       zone3:
         enabled: true
+        control_requires_power_on: true
+        power_command_allowed_when_device_online: true
+        core:
+          - power
+          - volume
+          - mute
+        extended:
+          - direct
+          - video-input
+
+  avr500:
+    model: avr500
+    topic: arcam/avr500
+
+    transport:
+      type: serial
+      port: /dev/ttyUSB0
+      baudrate: 38400
+      timeout_seconds: 1.0
+
+    polling:
+      heartbeat_seconds: 5
+      missed_heartbeats_limit: 2
+      offline_retry_seconds: 10
+      offline_backoff_max_seconds: 60
+      core_refresh_seconds: 30
+      burst_collection_seconds: 5
+
+    commands:
+      ack_timeout_seconds: 2
+      reject_when_unavailable: true
+      update_state_from_ack: false
+
+    zones:
+      zone1:
+        enabled: true
+        control_requires_power_on: true
+        power_command_allowed_when_device_online: true
+        core:
+          - power
+          - source
+          - volume
+        extended:
+          - room-eq
+          - dolby-volume
+
+      zone2:
+        enabled: true
+        control_requires_power_on: true
+        power_command_allowed_when_device_online: true
+        core:
+          - power
+          - source
+          - mute
+        extended:
+          - audio-input
+
+      zone3:
+        enabled: false
         control_requires_power_on: true
         power_command_allowed_when_device_online: true
         core:
