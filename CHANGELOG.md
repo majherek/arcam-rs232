@@ -11,6 +11,9 @@
   attempt finishes instead of immediately when the command is accepted.
 - Publish `status/device=online` after the first valid ARCAM status frame,
   without waiting for the full configured bootstrap scan to finish.
+- Fixed command ACK handling so direct command acknowledgements do not update
+  MQTT state when `update_state_from_ack` is disabled.
+- Changed the OpenHAB volume control example to a slider capped at `50 dB`.
 - Added Docker troubleshooting notes for `docker logs`.
 
 ## v0.2.0

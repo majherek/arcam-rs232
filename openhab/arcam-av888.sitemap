@@ -35,7 +35,7 @@ sitemap arcam_av888 label="Arcam AV888"
             VCR="VCR",
             iPod="iPod"
         ]
-        Setpoint item=Arcam_AV888_Zone1_Volume visibility=[Arcam_AV888_Zone1_Control=="available"] minValue=0 maxValue=99 step=0.5
+        Slider item=Arcam_AV888_Zone1_Volume visibility=[Arcam_AV888_Zone1_Control=="available"] minValue=0 maxValue=50 step=0.5
         Switch item=Arcam_AV888_Zone1_Mute visibility=[Arcam_AV888_Zone1_Control=="available"]
         Switch item=Arcam_AV888_Zone1_Room_EQ visibility=[Arcam_AV888_Zone1_Control=="available"]
         Selection item=Arcam_AV888_Zone1_Dolby_Volume visibility=[Arcam_AV888_Zone1_Control=="available"] mappings=[off="Off", music="Music", movie="Movie"]

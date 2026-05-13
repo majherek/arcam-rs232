@@ -276,8 +276,11 @@ class DeviceRunner:
                 continue
             for raw in reader.feed(chunk):
                 self._trace_rx(raw)
-                if _is_expected_ack(raw, frame, expected_rc5):
+                is_ack = _is_expected_ack(raw, frame, expected_rc5)
+                if is_ack:
                     ack_seen = True
+                    if not self.device.commands.update_state_from_ack:
+                        continue
                 self._handle_frame(raw)
         return ack_seen
 
