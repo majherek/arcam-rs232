@@ -1,6 +1,6 @@
 # arcam-rs232
 
-Command-line RS232/TCP decoder and controller for Arcam AVR500, AVR600 and AV888 receivers.
+RS232/TCP command-line tools and MQTT automation daemon for Arcam AVR500, AVR600 and AV888 receivers.
 
 This project implements parts of the Arcam custom-install protocol described in:
 
@@ -10,7 +10,16 @@ Protocol reference PDF:
 
 https://www.arcam.co.uk/ugc/tor/av888/RS232/AVR600_RS232_SH217_E_7.0.pdf
 
-It can run as a sniffer for status frames, decode responses, send direct RS232 commands, and emulate IR remote RC5 commands through the documented `Simulate RC5 IR Command` command (`0x08`).
+It provides two main entry points:
+
+- `arcam`: command-line RS232/TCP sniffer, decoder and controller.
+- `arcam-daemon`: long-running MQTT bridge for home automation systems such as openHAB.
+
+The CLI can sniff status frames, decode responses, send direct RS232 commands,
+and emulate IR remote RC5 commands through the documented `Simulate RC5 IR
+Command` command (`0x08`). The daemon keeps receiver state in MQTT, accepts MQTT
+commands, supports multiple devices, and handles receivers that are physically
+offline most of the time.
 
 ## Supported Connections
 
@@ -45,7 +54,7 @@ source .venv/bin/activate
 pip install pyserial
 ```
 
-Run the tool:
+Run the CLI:
 
 ```bash
 uv run arcam --help
@@ -70,6 +79,8 @@ The protocol code is also importable as a Python package for daemon or automatio
 from arcam_rs232 import ArcamDecoder, FrameReader, request_frame
 ```
 
+## MQTT Daemon
+
 The MQTT daemon entry point validates configuration, lists MQTT fields, and runs
 the long-lived bridge:
 
@@ -89,7 +100,8 @@ The daemon can also publish its MQTT availability status and exit:
 uv run arcam-daemon --config config.example.yaml --once
 ```
 
-The current daemon runtime publishes `arcam/daemon = online` on connect, sets MQTT LWT to `offline`, and publishes `offline` before clean shutdown. Device polling and command handling are planned next.
+The daemon publishes `arcam/daemon = online` on connect, sets MQTT LWT to
+`offline`, and publishes `offline` before clean shutdown.
 
 It also starts a runner for each configured device. The runner connects to the
 configured serial/TCP transport, publishes device availability, reads the core
@@ -175,6 +187,20 @@ export ARCAM_MQTT_PASSWORD='change-me'
 docker compose -f docker-compose.example.yml up -d
 ```
 
+Prebuilt Docker images can be published to GitHub Container Registry through the
+included GitHub Actions workflow:
+
+```text
+ghcr.io/<owner>/arcam-rs232:latest
+ghcr.io/<owner>/arcam-rs232:<git-sha>
+```
+
+Example:
+
+```bash
+docker pull ghcr.io/majherek/arcam-rs232:latest
+```
+
 systemd example files are in `packaging/`:
 
 ```text
@@ -199,6 +225,9 @@ They define AV888 status, Zone 1 controls and read-only audio state, plus Zone 2
 and Zone 3 power controls. The sitemap uses daemon/device/zone status visibility.
 
 ## Basic Usage
+
+The examples below use the `arcam` command-line tool directly. Use this for
+manual testing, decoding, sniffing and one-off commands.
 
 Sniff/listen on a serial port:
 
