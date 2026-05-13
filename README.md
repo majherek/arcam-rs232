@@ -233,6 +233,8 @@ git tag v0.1.5
 git push origin v0.1.5
 ```
 
+See `CHANGELOG.md` for release notes.
+
 systemd example files are in `packaging/`:
 
 ```text
