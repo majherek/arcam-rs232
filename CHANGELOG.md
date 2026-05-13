@@ -1,5 +1,15 @@
 # Changelog
 
+## v0.2.0
+
+- Added MQTT scan command topics to wake offline device runners immediately:
+  `arcam/daemon/cmd/scan` and `arcam/<device_id>/cmd/scan`.
+- Added scan state topics for OpenHAB switch controls:
+  `arcam/daemon/state/scan` and `arcam/<device_id>/state/scan`.
+- The daemon now interrupts offline retry backoff when a scan command is received.
+- Online runners refresh configured state when a scan command is received.
+- Updated OpenHAB examples and documentation for the scan switch.
+
 ## v0.1.1
 
 - Fixed MQTT device availability for RS232-to-Ethernet converters.
