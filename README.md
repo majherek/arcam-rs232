@@ -70,10 +70,17 @@ The protocol code is also importable as a Python package for daemon or automatio
 from arcam_rs232 import ArcamDecoder, FrameReader, request_frame
 ```
 
-The MQTT daemon entry point is being developed on the daemon feature branch:
+The MQTT daemon entry point validates configuration, lists MQTT fields, and runs
+the long-lived bridge:
 
 ```bash
 uv run arcam-daemon --config config.example.yaml --print-config
+```
+
+List MQTT fields that can be used in zone `core` and `extended` config:
+
+```bash
+uv run arcam-daemon --list-specs
 ```
 
 The daemon can also publish its MQTT availability status and exit:
@@ -142,6 +149,35 @@ sample-rate     sample_rate     yes   no     read-only sample rate
 audio-input     audio_input     yes   no     read-only audio input type
 video-input     video_input     yes   no     read-only video input type
 ```
+
+## Deployment
+
+MQTT passwords can be read from an environment variable instead of the YAML file:
+
+```yaml
+mqtt:
+  username: arcam
+  password_env: ARCAM_MQTT_PASSWORD
+```
+
+Docker Compose example:
+
+```bash
+cp config.av888.example.yaml config.yaml
+# edit config.yaml
+export ARCAM_MQTT_PASSWORD='change-me'
+docker compose -f docker-compose.example.yml up -d
+```
+
+systemd example files are in `packaging/`:
+
+```text
+packaging/arcam-rs232.service
+packaging/arcam-rs232.env.example
+```
+
+Install your edited config as `/etc/arcam-rs232/config.yaml` and the environment
+file as `/etc/arcam-rs232/arcam-rs232.env`.
 
 ## Basic Usage
 

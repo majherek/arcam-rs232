@@ -3,6 +3,7 @@ import json
 import threading
 import time
 from dataclasses import asdict
+from typing import Any
 
 from .config import ConfigError, load_config
 from .mqtt import MqttBridge
@@ -38,6 +39,14 @@ def print_specs():
         print("  ".join(value.ljust(widths[index]) for index, value in enumerate(row)))
 
 
+def redacted_config(config) -> dict[str, Any]:
+    data = asdict(config)
+    mqtt = data.get("mqtt")
+    if isinstance(mqtt, dict):
+        mqtt["password"] = "<set>" if mqtt.get("password") else None
+    return data
+
+
 def arcam_daemon():
     args = build_parser().parse_args()
     if args.list_specs:
@@ -50,7 +59,7 @@ def arcam_daemon():
         raise SystemExit(f"Configuration error: {exc}") from exc
 
     if args.print_config:
-        print(json.dumps(asdict(config), indent=2, sort_keys=True))
+        print(json.dumps(redacted_config(config), indent=2, sort_keys=True))
         return
 
     bridge = MqttBridge(config.mqtt)

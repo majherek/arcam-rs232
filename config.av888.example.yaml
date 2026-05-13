@@ -1,18 +1,18 @@
-# Example configuration for the arcam-rs232 MQTT daemon.
+# Example AV888 daemon configuration. Replace all hosts, ports, and credentials
+# with values from your own network before using it.
 
 mqtt:
-  host: mosquitto
-  port: 1883
-  username: null
-  password: null
-  password_env: null
+  host: mqtt.example.local
+  port: 8883
+  username: arcam
+  password_env: ARCAM_MQTT_PASSWORD
   tls:
-    enabled: false
+    enabled: true
     ca_file: null
     cert_file: null
     key_file: null
     insecure: false
-  client_id: arcam-rs232
+  client_id: arcam-rs232-av888
   daemon_topic: arcam/daemon
   retain: true
   qos: 0
@@ -24,16 +24,9 @@ devices:
 
     transport:
       type: tcp
-      host: arcam-rs232.local
+      host: arcam-rs232.example.local
       port: 8899
       timeout_seconds: 1.0
-
-    # Serial transport example:
-    # transport:
-    #   type: serial
-    #   port: /dev/ttyUSB0
-    #   baudrate: 38400
-    #   timeout_seconds: 1.0
 
     polling:
       heartbeat_seconds: 5

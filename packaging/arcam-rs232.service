@@ -1,0 +1,16 @@
+[Unit]
+Description=Arcam RS232 MQTT daemon
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+EnvironmentFile=/etc/arcam-rs232/arcam-rs232.env
+ExecStart=/usr/local/bin/arcam-daemon --config /etc/arcam-rs232/config.yaml
+Restart=on-failure
+RestartSec=5s
+User=arcam-rs232
+Group=arcam-rs232
+
+[Install]
+WantedBy=multi-user.target

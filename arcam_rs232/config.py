@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any, Literal
@@ -29,6 +30,7 @@ class MqttConfig:
     port: int = 1883
     username: str | None = None
     password: str | None = None
+    password_env: str | None = None
     tls: TlsConfig = field(default_factory=TlsConfig)
     client_id: str = "arcam-rs232"
     daemon_topic: str = "arcam/daemon"
@@ -117,11 +119,20 @@ def parse_config(raw: dict[str, Any]) -> DaemonConfig:
 
 def _parse_mqtt(raw: dict[str, Any]) -> MqttConfig:
     tls_raw = _optional_mapping(raw, "tls", "mqtt")
+    password = _optional_str(raw, "password", "mqtt")
+    password_env = _optional_str(raw, "password_env", "mqtt")
+    if password and password_env:
+        raise ConfigError("mqtt.password and mqtt.password_env are mutually exclusive")
+    if password_env:
+        password = os.getenv(password_env)
+        if password is None:
+            raise ConfigError(f"environment variable {password_env} from mqtt.password_env is not set")
     return MqttConfig(
         host=_required_str(raw, "host", "mqtt"),
         port=_int(raw, "port", 1883, "mqtt", minimum=1, maximum=65535),
         username=_optional_str(raw, "username", "mqtt"),
-        password=_optional_str(raw, "password", "mqtt"),
+        password=password,
+        password_env=password_env,
         tls=TlsConfig(
             enabled=_bool(tls_raw, "enabled", False, "mqtt.tls"),
             ca_file=_optional_str(tls_raw, "ca_file", "mqtt.tls"),

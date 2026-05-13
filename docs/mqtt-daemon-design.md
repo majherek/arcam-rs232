@@ -394,7 +394,7 @@ arcam/<device_id>/diagnostics/last_tx
 
 ## Docker And systemd
 
-The daemon should support both:
+The daemon supports both:
 
 ```text
 Docker / docker compose
@@ -407,6 +407,23 @@ Daemon command:
 
 ```bash
 arcam-daemon --config /etc/arcam-rs232/config.yaml
+```
+
+MQTT secrets should be passed through environment variables:
+
+```yaml
+mqtt:
+  password_env: ARCAM_MQTT_PASSWORD
+```
+
+Example deployment files:
+
+```text
+Dockerfile
+docker-compose.example.yml
+config.av888.example.yaml
+packaging/arcam-rs232.service
+packaging/arcam-rs232.env.example
 ```
 
 ## openHAB Integration
