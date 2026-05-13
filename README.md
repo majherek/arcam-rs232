@@ -76,7 +76,13 @@ The MQTT daemon entry point is being developed on the daemon feature branch:
 uv run arcam-daemon --config config.example.yaml --print-config
 ```
 
-The command currently validates and prints normalized YAML configuration. MQTT runtime support is planned next.
+The daemon can also publish its MQTT availability status and exit:
+
+```bash
+uv run arcam-daemon --config config.example.yaml --once
+```
+
+The current daemon runtime publishes `arcam/daemon = online` on connect, sets MQTT LWT to `offline`, and publishes `offline` before clean shutdown. Device polling and command handling are planned next.
 
 ## Basic Usage
 
