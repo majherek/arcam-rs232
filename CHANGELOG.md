@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## v0.3.0
 
 - Fixed MQTT scan handling so the daemon does not block the Paho network loop
   while publishing scan switch state back to `OFF`.
