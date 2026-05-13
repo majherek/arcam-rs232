@@ -10,3 +10,4 @@ services:
     command: ["--config", "/config/config.yaml"]
     # For troubleshooting:
     # command: ["--config", "/config/config.yaml", "--log-level", "DEBUG"]
+    # command: ["--config", "/config/config.yaml", "--protocol-trace"]

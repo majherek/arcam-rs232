@@ -26,6 +26,11 @@ def build_parser():
         choices=("DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"),
         help="Daemon log verbosity",
     )
+    parser.add_argument(
+        "--protocol-trace",
+        action="store_true",
+        help="Log ARCAM RS232/TCP TX/RX frames as HEX",
+    )
     return parser
 
 
@@ -133,7 +138,10 @@ def arcam_daemon():
     bridge = MqttBridge(config.mqtt)
     bridge.connect()
     LOGGER.info("MQTT bridge started; daemon status topic is %s", config.mqtt.daemon_topic)
-    runners = [DeviceRunner(device=device, mqtt=bridge) for device in config.devices.values()]
+    runners = [
+        DeviceRunner(device=device, mqtt=bridge, protocol_trace=args.protocol_trace)
+        for device in config.devices.values()
+    ]
     subscribe_scan_commands(bridge, config, runners)
     threads: list[threading.Thread] = []
     try:

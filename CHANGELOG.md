@@ -6,6 +6,7 @@
   while publishing scan switch state back to `OFF`.
 - Added timestamped daemon logging with `--log-level`, including `DEBUG` logs
   for MQTT messages, reconnects, scans, heartbeats, commands, and state updates.
+- Added `--protocol-trace` to log raw ARCAM RS232/TCP TX/RX frames as HEX.
 - Added Docker troubleshooting notes for `docker logs`.
 
 ## v0.2.0

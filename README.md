@@ -109,6 +109,14 @@ uv run arcam-daemon --config config.example.yaml --log-level DEBUG
 docker logs -f arcam-rs232
 ```
 
+Use `--protocol-trace` when you need raw ARCAM frames in the logs. It logs
+RS232/TCP TX and RX frames as HEX at `INFO` level:
+
+```bash
+uv run arcam-daemon --config config.example.yaml --protocol-trace
+uv run arcam-daemon --config config.example.yaml --log-level DEBUG --protocol-trace
+```
+
 If `arcam/daemon` flaps between `online` and `offline` while the process keeps
 running, check `mqtt.client_id`. MQTT brokers disconnect an existing connection
 when another client connects with the same client ID, which triggers the LWT

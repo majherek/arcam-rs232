@@ -26,6 +26,7 @@ class DeviceRunner:
     subscribed: bool = False
     published: dict[str, str] = field(default_factory=dict)
     wake_event: threading.Event = field(default_factory=threading.Event)
+    protocol_trace: bool = False
 
     def run_forever(self):
         retry_delay = self.device.polling.offline_retry_seconds
@@ -111,7 +112,9 @@ class DeviceRunner:
             for spec in specs_for_names((*zone.core, *zone.extended)):
                 if not spec.can_read:
                     continue
-                transport.write(request_frame(zone_id, spec.request_command))
+                frame = request_frame(zone_id, spec.request_command)
+                self._trace_tx(f"{zone_name}/{spec.name} request", frame)
+                transport.write(frame)
                 LOGGER.debug(
                     "%s: requesting %s/%s",
                     self.device.id,
@@ -127,7 +130,9 @@ class DeviceRunner:
             if not zone.enabled:
                 continue
             zone_id = _zone_number(zone_name)
-            transport.write(request_frame(zone_id, 0x00))
+            frame = request_frame(zone_id, 0x00)
+            self._trace_tx(f"{zone_name}/power heartbeat", frame)
+            transport.write(frame)
             LOGGER.debug("%s: heartbeat power request for %s", self.device.id, zone_name)
             seen = self._collect(transport, reader, self.device.transport.timeout_seconds) or seen
         return seen
@@ -143,6 +148,7 @@ class DeviceRunner:
             if not chunk:
                 continue
             for raw in reader.feed(chunk):
+                self._trace_rx(raw)
                 seen = True
                 self._handle_frame(raw)
         return seen
@@ -229,6 +235,7 @@ class DeviceRunner:
             command.command,
             command.payload,
         )
+        self._trace_tx(f"{command.zone_name}/{command.command} command", frame)
         transport.write(frame)
         ack_seen = self._collect_command_response(transport, reader, frame, expected_rc5)
         if ack_seen:
@@ -257,6 +264,7 @@ class DeviceRunner:
             if not chunk:
                 continue
             for raw in reader.feed(chunk):
+                self._trace_rx(raw)
                 if _is_expected_ack(raw, frame, expected_rc5):
                     ack_seen = True
                 self._handle_frame(raw)
@@ -275,6 +283,14 @@ class DeviceRunner:
                 self.command_queue.get_nowait()
             except Empty:
                 return
+
+    def _trace_tx(self, label: str, frame: bytes):
+        if self.protocol_trace:
+            LOGGER.info("%s: TX %s: %s", self.device.id, label, hex_bytes(frame))
+
+    def _trace_rx(self, frame: bytes):
+        if self.protocol_trace:
+            LOGGER.info("%s: RX: %s", self.device.id, hex_bytes(frame))
 
 
 def _zone_number(zone_name: str) -> int:

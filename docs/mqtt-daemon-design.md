@@ -438,12 +438,17 @@ Debug logging:
 
 ```bash
 arcam-daemon --config /etc/arcam-rs232/config.yaml --log-level DEBUG
+arcam-daemon --config /etc/arcam-rs232/config.yaml --protocol-trace
 docker logs -f arcam-rs232
 ```
 
 Logs include timestamps, thread names, MQTT connect/disconnect events,
 subscriptions, incoming command topics, reconnect delays, heartbeat requests,
 and state updates.
+
+`--protocol-trace` logs raw ARCAM RS232/TCP TX and RX frames as HEX. It logs at
+`INFO` level, so it can be enabled without turning on full MQTT/Paho `DEBUG`
+logging.
 
 If daemon availability flaps between `online` and `offline` while the process
 keeps running, check for a duplicate MQTT `client_id`. Brokers disconnect the
