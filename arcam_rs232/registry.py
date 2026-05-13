@@ -31,6 +31,7 @@ FrameBuilder = Callable[[int, str], bytes]
 class MqttSpec:
     name: str
     topic: str
+    values: str = ""
     request_command: int | None = None
     state_command: int | None = None
     parse_state: StateParser | None = None
@@ -164,19 +165,19 @@ def _build_direct(zone: int, payload: str) -> bytes:
 
 
 MQTT_SPECS = (
-    MqttSpec("power", "power", 0x00, 0x00, _power_value, _build_power, power_required=False, burst_after_command=True),
-    MqttSpec("source", "source", 0x1D, 0x1D, _source_value, _build_source),
-    MqttSpec("volume", "volume", 0x0D, 0x0D, _volume_value, _build_volume),
-    MqttSpec("mute", "mute", 0x0E, 0x0E, _mute_value, _build_mute),
-    MqttSpec("room-eq", "room_eq", 0x37, 0x37, _mapped_value(ROOM_EQ), _build_room_eq),
-    MqttSpec("dolby-volume", "dolby_volume", 0x38, 0x38, _mapped_value(DOLBY_VOLUME), _build_dolby_volume),
-    MqttSpec("direct", "direct", 0x0F, 0x0F, _mapped_value(DIRECT_MODE), _build_direct),
-    MqttSpec("decode-2ch", "decode_2ch", 0x10, 0x10, _mapped_value(DECODE_2CH), None),
-    MqttSpec("decode-mch", "decode_mch", 0x11, 0x11, _mapped_value(DECODE_MCH), None),
-    MqttSpec("incoming-audio", "incoming_audio", 0x43, 0x43, _incoming_audio_value, None),
-    MqttSpec("sample-rate", "sample_rate", 0x44, 0x44, _mapped_value(SAMPLE_RATE_MAP), None),
-    MqttSpec("audio-input", "audio_input", 0x0B, 0x0B, _mapped_value(AUDIO_INPUT_TYPE), None),
-    MqttSpec("video-input", "video_input", 0x0C, 0x0C, _mapped_value(VIDEO_INPUT_TYPE), None),
+    MqttSpec("power", "power", "on|standby", 0x00, 0x00, _power_value, _build_power, power_required=False, burst_after_command=True),
+    MqttSpec("source", "source", "source name, e.g. AV|PVR|SAT", 0x1D, 0x1D, _source_value, _build_source),
+    MqttSpec("volume", "volume", "numeric dB value", 0x0D, 0x0D, _volume_value, _build_volume),
+    MqttSpec("mute", "mute", "on|off command, muted|unmuted state", 0x0E, 0x0E, _mute_value, _build_mute),
+    MqttSpec("room-eq", "room_eq", "on|off", 0x37, 0x37, _mapped_value(ROOM_EQ), _build_room_eq),
+    MqttSpec("dolby-volume", "dolby_volume", "off|music|movie", 0x38, 0x38, _mapped_value(DOLBY_VOLUME), _build_dolby_volume),
+    MqttSpec("direct", "direct", "on|off", 0x0F, 0x0F, _mapped_value(DIRECT_MODE), _build_direct),
+    MqttSpec("decode-2ch", "decode_2ch", "read-only decode mode", 0x10, 0x10, _mapped_value(DECODE_2CH), None),
+    MqttSpec("decode-mch", "decode_mch", "read-only decode mode", 0x11, 0x11, _mapped_value(DECODE_MCH), None),
+    MqttSpec("incoming-audio", "incoming_audio", "read-only audio format", 0x43, 0x43, _incoming_audio_value, None),
+    MqttSpec("sample-rate", "sample_rate", "read-only sample rate", 0x44, 0x44, _mapped_value(SAMPLE_RATE_MAP), None),
+    MqttSpec("audio-input", "audio_input", "read-only audio input type", 0x0B, 0x0B, _mapped_value(AUDIO_INPUT_TYPE), None),
+    MqttSpec("video-input", "video_input", "read-only video input type", 0x0C, 0x0C, _mapped_value(VIDEO_INPUT_TYPE), None),
 )
 
 SPECS_BY_NAME = {spec.name: spec for spec in MQTT_SPECS}

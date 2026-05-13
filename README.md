@@ -117,26 +117,30 @@ acknowledgements.
 
 The MQTT runtime is backed by a command/state registry. Zone `core` and
 `extended` lists in the YAML config decide which values are requested at
-startup. The current extended allowlist includes:
+startup. List all available fields with:
 
-```text
-room_eq
-dolby_volume
-direct
-decode_2ch
-decode_mch
-incoming_audio
-sample_rate
-audio_input
-video_input
+```bash
+uv run arcam-daemon --list-specs
 ```
 
-The writable extended topics currently are:
+Current fields:
 
 ```text
-arcam/av888/zone1/cmd/room_eq = on|off
-arcam/av888/zone1/cmd/dolby_volume = off|music|movie
-arcam/av888/zone1/cmd/direct = on|off
+name            topic           read  write  values
+--------------  --------------  ----  -----  -----------------------------------
+power           power           yes   yes    on|standby
+source          source          yes   yes    source name, e.g. AV|PVR|SAT
+volume          volume          yes   yes    numeric dB value
+mute            mute            yes   yes    on|off command, muted|unmuted state
+room-eq         room_eq         yes   yes    on|off
+dolby-volume    dolby_volume    yes   yes    off|music|movie
+direct          direct          yes   yes    on|off
+decode-2ch      decode_2ch      yes   no     read-only decode mode
+decode-mch      decode_mch      yes   no     read-only decode mode
+incoming-audio  incoming_audio  yes   no     read-only audio format
+sample-rate     sample_rate     yes   no     read-only sample rate
+audio-input     audio_input     yes   no     read-only audio input type
+video-input     video_input     yes   no     read-only video input type
 ```
 
 ## Basic Usage
