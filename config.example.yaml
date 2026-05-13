@@ -66,6 +66,7 @@ devices:
           - room-eq
           - dolby-volume
           - direct
+          - sub-stereo-trim
           - decode-2ch
           - decode-mch
           - incoming-audio

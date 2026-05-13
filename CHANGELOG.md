@@ -17,6 +17,9 @@
   extended reads do not block user control for the full bootstrap duration.
 - Limit heartbeat polling to Zone 1 power, with a fallback to the first enabled
   zone if Zone 1 is disabled.
+- Added MQTT support for generic named RC5 commands through `cmd/rc5`, including
+  the `mode` RC5 alias.
+- Added MQTT and OpenHAB support for `sub-stereo-trim` / `sub_stereo_trim`.
 - Changed the OpenHAB volume control example to a slider capped at `50 dB`.
 - Added Docker troubleshooting notes for `docker logs`.
 

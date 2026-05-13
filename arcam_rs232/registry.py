@@ -18,6 +18,7 @@ from .protocol import (
     build_frame,
     rc5_frame_from_alias,
     source_to_rc5_alias,
+    sub_stereo_trim_to_byte,
     volume_to_byte,
     zone_rc5_alias,
 )
@@ -95,6 +96,17 @@ def _volume_value(data: bytes) -> str | None:
     return str(data[0] + 0.5 if data[1] == 0x05 else data[0])
 
 
+def _sub_stereo_trim_value(data: bytes) -> str | None:
+    if len(data) != 1:
+        return None
+    value = data[0]
+    if value == 0x00:
+        return "0"
+    if 0x80 <= value <= 0xA7:
+        return str(-((value - 0x7F) * 0.25))
+    return f"0x{value:02X}"
+
+
 def _mute_value(data: bytes) -> str | None:
     if len(data) != 1:
         return None
@@ -166,6 +178,14 @@ def _build_direct(zone: int, payload: str) -> bytes:
     return rc5_frame_from_alias(zone, zone_rc5_alias(zone, f"direct-{value}"))
 
 
+def _build_sub_stereo_trim(zone: int, payload: str) -> bytes:
+    return build_frame(zone, 0x45, [sub_stereo_trim_to_byte(payload)])
+
+
+def _build_rc5(zone: int, payload: str) -> bytes:
+    return rc5_frame_from_alias(zone, payload)
+
+
 MQTT_SPECS = (
     MqttSpec("power", "power", "on|standby", 0x00, 0x00, _power_value, _build_power, power_required=False, burst_after_command=True),
     MqttSpec("source", "source", "source name, e.g. AV|PVR|SAT", 0x1D, 0x1D, _source_value, _build_source),
@@ -174,6 +194,8 @@ MQTT_SPECS = (
     MqttSpec("room-eq", "room_eq", "on|off", 0x37, 0x37, _mapped_value(ROOM_EQ), _build_room_eq),
     MqttSpec("dolby-volume", "dolby_volume", "off|music|movie", 0x38, 0x38, _mapped_value(DOLBY_VOLUME), _build_dolby_volume),
     MqttSpec("direct", "direct", "on|off", 0x0F, 0x0F, _mapped_value(DIRECT_MODE), _build_direct),
+    MqttSpec("sub-stereo-trim", "sub_stereo_trim", "numeric dB value in 0.25 dB steps, -10.0..0.0", 0x45, 0x45, _sub_stereo_trim_value, _build_sub_stereo_trim),
+    MqttSpec("rc5", "rc5", "named RC5 alias, e.g. mode|display-off|volume-up", None, None, None, _build_rc5),
     MqttSpec("decode-2ch", "decode_2ch", "read-only decode mode", 0x10, 0x10, _mapped_value(DECODE_2CH), None),
     MqttSpec("decode-mch", "decode_mch", "read-only decode mode", 0x11, 0x11, _mapped_value(DECODE_MCH), None),
     MqttSpec("incoming-audio", "incoming_audio", "read-only audio format", 0x43, 0x43, _incoming_audio_value, None),

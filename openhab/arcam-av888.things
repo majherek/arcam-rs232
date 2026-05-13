@@ -68,6 +68,13 @@ Thing mqtt:topic:arcamAV888 "Arcam AV888" (mqtt:broker:mybroker) [
             on="On",
             off="Off"
         ]
+        Type number : zone1_sub_stereo_trim "Zone 1 Sub Stereo Trim" [
+            stateTopic="arcam/av888/zone1/state/sub_stereo_trim",
+            commandTopic="arcam/av888/zone1/cmd/sub_stereo_trim"
+        ]
+        Type string : zone1_rc5 "Zone 1 RC5 Command" [
+            commandTopic="arcam/av888/zone1/cmd/rc5"
+        ]
         Type string : zone1_decode_2ch "Zone 1 Decode 2ch" [
             stateTopic="arcam/av888/zone1/state/decode_2ch"
         ]
