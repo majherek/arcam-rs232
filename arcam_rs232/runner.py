@@ -6,6 +6,7 @@ import time
 import logging
 from dataclasses import dataclass, field
 from queue import Empty, Queue
+from typing import Callable
 
 from .config import DeviceConfig
 from .mqtt import OFFLINE, ONLINE, MqttBridge
@@ -23,6 +24,7 @@ class DeviceRunner:
     stop_requested: bool = False
     state: dict[str, dict[str, str]] = field(default_factory=dict)
     command_queue: Queue["MqttCommand"] = field(default_factory=Queue)
+    scan_queue: Queue["ScanRequest"] = field(default_factory=Queue)
     subscribed: bool = False
     published: dict[str, str] = field(default_factory=dict)
     wake_event: threading.Event = field(default_factory=threading.Event)
@@ -31,12 +33,14 @@ class DeviceRunner:
     def run_forever(self):
         retry_delay = self.device.polling.offline_retry_seconds
         while not self.stop_requested:
+            scan_requests = self._drain_scan_requests()
             try:
-                self._run_connected()
+                self._run_connected(scan_requests)
                 retry_delay = self.device.polling.offline_retry_seconds
             except (OSError, TimeoutError, socket.timeout) as exc:
                 self._publish_device_status(OFFLINE)
                 self._publish_all_zone_control("stale")
+                self._complete_scan_requests(scan_requests)
                 LOGGER.warning(
                     "%s: connection failed: %s; retrying in %.1f seconds",
                     self.device.id,
@@ -51,11 +55,13 @@ class DeviceRunner:
         self.stop_requested = True
         self.wake()
 
-    def wake(self):
+    def wake(self, on_scan_complete: Callable[[], None] | None = None):
         LOGGER.debug("%s: wake requested", self.device.id)
+        if on_scan_complete is not None:
+            self.scan_queue.put(ScanRequest(on_complete=on_scan_complete))
         self.wake_event.set()
 
-    def _run_connected(self):
+    def _run_connected(self, initial_scan_requests: list["ScanRequest"] | None = None):
         transport = make_config_transport(self.device.transport)
         reader = FrameReader()
         missed = 0
@@ -67,6 +73,7 @@ class DeviceRunner:
             self._publish_device_status(ONLINE)
             self._publish_unknown_control_for_missing_power()
             LOGGER.info("%s: bootstrap completed", self.device.id)
+            self._complete_scan_requests(initial_scan_requests or [])
 
             next_heartbeat = time.monotonic()
             while not self.stop_requested:
@@ -81,8 +88,12 @@ class DeviceRunner:
                     continue
                 if self.wake_event.is_set():
                     self.wake_event.clear()
+                    scan_requests = self._drain_scan_requests()
                     LOGGER.info("%s: scan requested; refreshing configured state", self.device.id)
-                    self._refresh_configured_state(transport, reader)
+                    try:
+                        self._refresh_configured_state(transport, reader)
+                    finally:
+                        self._complete_scan_requests(scan_requests)
                     next_heartbeat = time.monotonic() + self.device.polling.heartbeat_seconds
                     continue
                 self._collect(transport, reader, 0.05)
@@ -284,6 +295,21 @@ class DeviceRunner:
             except Empty:
                 return
 
+    def _drain_scan_requests(self) -> list["ScanRequest"]:
+        requests = []
+        while True:
+            try:
+                requests.append(self.scan_queue.get_nowait())
+            except Empty:
+                return requests
+
+    def _complete_scan_requests(self, requests: list["ScanRequest"]):
+        for request in requests:
+            try:
+                request.on_complete()
+            except Exception:
+                LOGGER.exception("%s: scan completion callback failed", self.device.id)
+
     def _trace_tx(self, label: str, frame: bytes):
         if self.protocol_trace:
             LOGGER.info("%s: TX %s: %s", self.device.id, label, hex_bytes(frame))
@@ -306,6 +332,11 @@ class MqttCommand:
     command: str
     payload: str
     spec: MqttSpec
+
+
+@dataclass(frozen=True)
+class ScanRequest:
+    on_complete: Callable[[], None]
 
 
 def _parse_command_topic(device_topic: str, topic: str) -> tuple[str, str, MqttSpec] | None:

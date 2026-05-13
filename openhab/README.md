@@ -45,7 +45,7 @@ arcam/daemon/state/scan = OFF
 ```
 
 The scan channel is a `Switch`: OpenHAB sends `ON`, and the daemon publishes
-`OFF` after accepting the scan request.
+`OFF` after the scan attempt finishes.
 
 `arcamAV888` availability follows the physical receiver status:
 

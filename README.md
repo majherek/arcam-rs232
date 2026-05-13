@@ -179,7 +179,8 @@ backoff sleep and starts a retry immediately. If a runner is already online, it
 refreshes the configured state.
 
 For OpenHAB switch controls, the daemon also publishes scan state back to `OFF`
-after accepting a scan request:
+after the scan attempt finishes. For an offline device, that means after the
+immediate bootstrap retry succeeds or fails:
 
 ```text
 arcam/daemon/state/scan = OFF

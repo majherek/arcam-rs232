@@ -82,6 +82,28 @@ def subscribe_scan_commands(bridge: MqttBridge, config, runners: list[DeviceRunn
     daemon_prefix = daemon_topic_prefix(config.mqtt.daemon_topic)
     daemon_scan_state_topic = f"{config.mqtt.daemon_topic}/state/scan"
 
+    def publish_scan_off(topic: str):
+        def complete():
+            LOGGER.info("Scan completed for %s.", topic)
+            bridge.publish_async(topic, "OFF")
+
+        return complete
+
+    def publish_scan_off_after_all(topic: str, count: int):
+        remaining = count
+        lock = threading.Lock()
+
+        def complete():
+            nonlocal remaining
+            with lock:
+                remaining -= 1
+                if remaining > 0:
+                    return
+            LOGGER.info("Scan completed for %s.", topic)
+            bridge.publish_async(topic, "OFF")
+
+        return complete
+
     def valid_scan_payload(message) -> bool:
         if message.retain:
             return False
@@ -92,9 +114,9 @@ def subscribe_scan_commands(bridge: MqttBridge, config, runners: list[DeviceRunn
         if not valid_scan_payload(message):
             return
         LOGGER.info("Received daemon scan request.")
+        complete = publish_scan_off_after_all(daemon_scan_state_topic, len(runners))
         for runner in runners:
-            runner.wake()
-        bridge.publish_async(daemon_scan_state_topic, "OFF")
+            runner.wake(complete)
 
     def scan_device(message):
         if not valid_scan_payload(message):
@@ -108,8 +130,7 @@ def subscribe_scan_commands(bridge: MqttBridge, config, runners: list[DeviceRunn
         if runner is None:
             return
         LOGGER.info("Received scan request for %s.", device_id)
-        runner.wake()
-        bridge.publish_async(f"{daemon_prefix}/{device_id}/state/scan", "OFF")
+        runner.wake(publish_scan_off(f"{daemon_prefix}/{device_id}/state/scan"))
 
     bridge.subscribe(f"{config.mqtt.daemon_topic}/cmd/scan", scan_all)
     bridge.publish(daemon_scan_state_topic, "OFF")
