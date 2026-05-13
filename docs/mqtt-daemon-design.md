@@ -434,6 +434,23 @@ Daemon command:
 arcam-daemon --config /etc/arcam-rs232/config.yaml
 ```
 
+Debug logging:
+
+```bash
+arcam-daemon --config /etc/arcam-rs232/config.yaml --log-level DEBUG
+docker logs -f arcam-rs232
+```
+
+Logs include timestamps, thread names, MQTT connect/disconnect events,
+subscriptions, incoming command topics, reconnect delays, heartbeat requests,
+and state updates.
+
+If daemon availability flaps between `online` and `offline` while the process
+keeps running, check for a duplicate MQTT `client_id`. Brokers disconnect the
+previous connection when another client connects with the same ID, which causes
+LWT `offline` messages and reconnect loops. Each daemon instance must use a
+unique `client_id`.
+
 MQTT username and password can be provided directly, through environment
 variables, or through files. Only one source may be configured per field.
 

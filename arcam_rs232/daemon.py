@@ -1,5 +1,6 @@
 import argparse
 import json
+import logging
 import threading
 import time
 from dataclasses import asdict
@@ -10,6 +11,8 @@ from .mqtt import MqttBridge
 from .registry import MQTT_SPECS
 from .runner import DeviceRunner
 
+LOGGER = logging.getLogger(__name__)
+
 
 def build_parser():
     parser = argparse.ArgumentParser(description="Arcam RS232 MQTT daemon")
@@ -17,7 +20,21 @@ def build_parser():
     parser.add_argument("--print-config", action="store_true", help="Load, validate, and print normalized config as JSON")
     parser.add_argument("--list-specs", action="store_true", help="List MQTT state/command specs usable in zone core/extended")
     parser.add_argument("--once", action="store_true", help="Connect to MQTT, publish daemon online/offline, then exit")
+    parser.add_argument(
+        "--log-level",
+        default="INFO",
+        choices=("DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"),
+        help="Daemon log verbosity",
+    )
     return parser
+
+
+def configure_logging(level: str):
+    logging.basicConfig(
+        level=getattr(logging, level),
+        format="%(asctime)s %(levelname)s [%(threadName)s] %(name)s: %(message)s",
+        datefmt="%Y-%m-%dT%H:%M:%S%z",
+    )
 
 
 def print_specs():
@@ -69,10 +86,10 @@ def subscribe_scan_commands(bridge: MqttBridge, config, runners: list[DeviceRunn
     def scan_all(message):
         if not valid_scan_payload(message):
             return
-        print("Received daemon scan request.")
+        LOGGER.info("Received daemon scan request.")
         for runner in runners:
             runner.wake()
-        bridge.publish(daemon_scan_state_topic, "OFF")
+        bridge.publish_async(daemon_scan_state_topic, "OFF")
 
     def scan_device(message):
         if not valid_scan_payload(message):
@@ -85,9 +102,9 @@ def subscribe_scan_commands(bridge: MqttBridge, config, runners: list[DeviceRunn
         runner = by_id.get(device_id)
         if runner is None:
             return
-        print(f"Received scan request for {device_id}.")
+        LOGGER.info("Received scan request for %s.", device_id)
         runner.wake()
-        bridge.publish(f"{daemon_prefix}/{device_id}/state/scan", "OFF")
+        bridge.publish_async(f"{daemon_prefix}/{device_id}/state/scan", "OFF")
 
     bridge.subscribe(f"{config.mqtt.daemon_topic}/cmd/scan", scan_all)
     bridge.publish(daemon_scan_state_topic, "OFF")
@@ -99,6 +116,7 @@ def subscribe_scan_commands(bridge: MqttBridge, config, runners: list[DeviceRunn
 
 def arcam_daemon():
     args = build_parser().parse_args()
+    configure_logging(args.log_level)
     if args.list_specs:
         print_specs()
         return
@@ -114,7 +132,7 @@ def arcam_daemon():
 
     bridge = MqttBridge(config.mqtt)
     bridge.connect()
-    print(f"Published daemon status online to {config.mqtt.daemon_topic}")
+    LOGGER.info("MQTT bridge started; daemon status topic is %s", config.mqtt.daemon_topic)
     runners = [DeviceRunner(device=device, mqtt=bridge) for device in config.devices.values()]
     subscribe_scan_commands(bridge, config, runners)
     threads: list[threading.Thread] = []
@@ -126,11 +144,11 @@ def arcam_daemon():
             thread = threading.Thread(target=runner.run_forever, name=f"arcam-{runner.device.id}", daemon=True)
             thread.start()
             threads.append(thread)
-        print(f"Daemon is running with {len(threads)} device runner(s).")
+        LOGGER.info("Daemon is running with %d device runner(s).", len(threads))
         while True:
             time.sleep(3600)
     except KeyboardInterrupt:
-        print("Stopping daemon.")
+        LOGGER.info("Stopping daemon.")
     finally:
         for runner in runners:
             runner.stop()

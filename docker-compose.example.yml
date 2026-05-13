@@ -8,3 +8,5 @@ services:
     volumes:
       - ./config.yaml:/config/config.yaml:ro
     command: ["--config", "/config/config.yaml"]
+    # For troubleshooting:
+    # command: ["--config", "/config/config.yaml", "--log-level", "DEBUG"]

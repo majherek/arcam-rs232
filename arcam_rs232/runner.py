@@ -3,6 +3,7 @@ from __future__ import annotations
 import socket
 import threading
 import time
+import logging
 from dataclasses import dataclass, field
 from queue import Empty, Queue
 
@@ -11,6 +12,8 @@ from .mqtt import OFFLINE, ONLINE, MqttBridge
 from .protocol import FrameReader, hex_bytes, request_frame
 from .registry import MqttSpec, command_spec_for_topic, spec_for_frame, specs_for_names
 from .transport import make_config_transport
+
+LOGGER = logging.getLogger(__name__)
 
 
 @dataclass
@@ -33,7 +36,12 @@ class DeviceRunner:
             except (OSError, TimeoutError, socket.timeout) as exc:
                 self._publish_device_status(OFFLINE)
                 self._publish_all_zone_control("stale")
-                print(f"{self.device.id}: connection failed: {exc}")
+                LOGGER.warning(
+                    "%s: connection failed: %s; retrying in %.1f seconds",
+                    self.device.id,
+                    exc,
+                    retry_delay,
+                )
                 self.wake_event.wait(retry_delay)
                 self.wake_event.clear()
                 retry_delay = min(retry_delay * 2, self.device.polling.offline_backoff_max_seconds)
@@ -43,6 +51,7 @@ class DeviceRunner:
         self.wake()
 
     def wake(self):
+        LOGGER.debug("%s: wake requested", self.device.id)
         self.wake_event.set()
 
     def _run_connected(self):
@@ -50,12 +59,13 @@ class DeviceRunner:
         reader = FrameReader()
         missed = 0
         try:
-            print(f"{self.device.id}: connected to {transport.label}")
+            LOGGER.info("%s: connected to %s", self.device.id, transport.label)
             self._subscribe_commands()
             if not self._refresh_configured_state(transport, reader):
                 raise TimeoutError("no bootstrap response from device")
             self._publish_device_status(ONLINE)
             self._publish_unknown_control_for_missing_power()
+            LOGGER.info("%s: bootstrap completed", self.device.id)
 
             next_heartbeat = time.monotonic()
             while not self.stop_requested:
@@ -70,6 +80,7 @@ class DeviceRunner:
                     continue
                 if self.wake_event.is_set():
                     self.wake_event.clear()
+                    LOGGER.info("%s: scan requested; refreshing configured state", self.device.id)
                     self._refresh_configured_state(transport, reader)
                     next_heartbeat = time.monotonic() + self.device.polling.heartbeat_seconds
                     continue
@@ -89,6 +100,7 @@ class DeviceRunner:
             self._publish_device_status(OFFLINE)
             self._publish_all_zone_control("stale")
             self._discard_pending_commands()
+            LOGGER.info("%s: disconnected", self.device.id)
 
     def _refresh_configured_state(self, transport, reader: FrameReader) -> bool:
         seen = False
@@ -100,6 +112,12 @@ class DeviceRunner:
                 if not spec.can_read:
                     continue
                 transport.write(request_frame(zone_id, spec.request_command))
+                LOGGER.debug(
+                    "%s: requesting %s/%s",
+                    self.device.id,
+                    zone_name,
+                    spec.name,
+                )
                 seen = self._collect(transport, reader, self.device.transport.timeout_seconds) or seen
         return seen
 
@@ -110,6 +128,7 @@ class DeviceRunner:
                 continue
             zone_id = _zone_number(zone_name)
             transport.write(request_frame(zone_id, 0x00))
+            LOGGER.debug("%s: heartbeat power request for %s", self.device.id, zone_name)
             seen = self._collect(transport, reader, self.device.transport.timeout_seconds) or seen
         return seen
 
@@ -142,6 +161,7 @@ class DeviceRunner:
             return
         zone_topic = f"zone{zone_id}"
         self.state.setdefault(zone_topic, {})[spec.name] = value
+        LOGGER.debug("%s: state %s/%s=%s", self.device.id, zone_topic, spec.topic, value)
         self.mqtt.publish(f"{self.device.topic}/{zone_topic}/state/{spec.topic}", value)
         if spec.name == "power":
             self._publish_zone_control(zone_topic, "available" if value == "on" else "unavailable")
@@ -186,6 +206,7 @@ class DeviceRunner:
 
         self.mqtt.subscribe(f"{self.device.topic}/+/cmd/+", enqueue)
         self.subscribed = True
+        LOGGER.info("%s: subscribed to command topics", self.device.id)
 
     def _execute_command(self, transport, reader: FrameReader, command: "MqttCommand"):
         try:
@@ -201,6 +222,13 @@ class DeviceRunner:
             return
 
         expected_rc5 = frame[4:6] if len(frame) == 7 and frame[2] == 0x08 and frame[3] == 0x02 else None
+        LOGGER.info(
+            "%s: executing command %s/%s payload=%s",
+            self.device.id,
+            command.zone_name,
+            command.command,
+            command.payload,
+        )
         transport.write(frame)
         ack_seen = self._collect_command_response(transport, reader, frame, expected_rc5)
         if ack_seen:

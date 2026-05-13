@@ -100,6 +100,20 @@ The daemon can also publish its MQTT availability status and exit:
 uv run arcam-daemon --config config.example.yaml --once
 ```
 
+Use `--log-level DEBUG` when troubleshooting MQTT commands, reconnects,
+heartbeats, and ARCAM state refreshes. Logs are written to stdout/stderr with
+timestamps, so they are visible through `docker logs`:
+
+```bash
+uv run arcam-daemon --config config.example.yaml --log-level DEBUG
+docker logs -f arcam-rs232
+```
+
+If `arcam/daemon` flaps between `online` and `offline` while the process keeps
+running, check `mqtt.client_id`. MQTT brokers disconnect an existing connection
+when another client connects with the same client ID, which triggers the LWT
+`offline` message. Each daemon instance must use a unique `client_id`.
+
 The daemon publishes `arcam/daemon = online` on connect, sets MQTT LWT to
 `offline`, and publishes `offline` before clean shutdown.
 

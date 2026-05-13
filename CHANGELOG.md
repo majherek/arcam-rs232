@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+- Fixed MQTT scan handling so the daemon does not block the Paho network loop
+  while publishing scan switch state back to `OFF`.
+- Added timestamped daemon logging with `--log-level`, including `DEBUG` logs
+  for MQTT messages, reconnects, scans, heartbeats, commands, and state updates.
+- Added Docker troubleshooting notes for `docker logs`.
+
 ## v0.2.0
 
 - Added MQTT scan command topics to wake offline device runners immediately:
