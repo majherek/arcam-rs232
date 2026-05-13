@@ -16,19 +16,32 @@ $OPENHAB_CONF/items/arcam-av888.items
 $OPENHAB_CONF/sitemaps/arcam-av888.sitemap
 ```
 
-Adjust the MQTT broker bridge in `arcam-av888.things` before using it:
+The Thing file assumes that your MQTT broker already exists in openHAB as:
 
 ```text
-Bridge mqtt:broker:mosquitto "Mosquitto MQTT Broker" [
-    host="mosquitto",
-    port=1883,
-    secure=false
-]
+mqtt:broker:mybroker
 ```
 
-If you already have an MQTT Broker Thing in openHAB, either reuse its bridge id
-in the channel links or remove the bridge block and move the topic Thing under
-your existing broker.
+Change the bridge UID in `arcam-av888.things` if your broker uses another id.
+
+The file defines two Things:
+
+```text
+Thing mqtt:topic:arcamDaemon
+Thing mqtt:topic:arcamAV888
+```
+
+`arcamDaemon` availability follows the daemon LWT/status topic:
+
+```text
+arcam/daemon = online | offline
+```
+
+`arcamAV888` availability follows the physical receiver status:
+
+```text
+arcam/av888/status/device = online | offline
+```
 
 The sitemap uses `visibility=[... AND ...]` for daemon/device readiness and
 `zoneX/status/control` for zone-specific controls. Zone power controls stay
