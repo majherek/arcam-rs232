@@ -43,6 +43,7 @@ def redacted_config(config) -> dict[str, Any]:
     data = asdict(config)
     mqtt = data.get("mqtt")
     if isinstance(mqtt, dict):
+        mqtt["username"] = "<set>" if mqtt.get("username") else None
         mqtt["password"] = "<set>" if mqtt.get("password") else None
     return data
 

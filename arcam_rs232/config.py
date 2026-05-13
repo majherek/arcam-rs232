@@ -29,8 +29,11 @@ class MqttConfig:
     host: str
     port: int = 1883
     username: str | None = None
+    username_env: str | None = None
+    username_file: str | None = None
     password: str | None = None
     password_env: str | None = None
+    password_file: str | None = None
     tls: TlsConfig = field(default_factory=TlsConfig)
     client_id: str = "arcam-rs232"
     daemon_topic: str = "arcam/daemon"
@@ -119,20 +122,17 @@ def parse_config(raw: dict[str, Any]) -> DaemonConfig:
 
 def _parse_mqtt(raw: dict[str, Any]) -> MqttConfig:
     tls_raw = _optional_mapping(raw, "tls", "mqtt")
-    password = _optional_str(raw, "password", "mqtt")
-    password_env = _optional_str(raw, "password_env", "mqtt")
-    if password and password_env:
-        raise ConfigError("mqtt.password and mqtt.password_env are mutually exclusive")
-    if password_env:
-        password = os.getenv(password_env)
-        if password is None:
-            raise ConfigError(f"environment variable {password_env} from mqtt.password_env is not set")
+    username, username_env, username_file = _secret(raw, "username", "mqtt")
+    password, password_env, password_file = _secret(raw, "password", "mqtt")
     return MqttConfig(
         host=_required_str(raw, "host", "mqtt"),
         port=_int(raw, "port", 1883, "mqtt", minimum=1, maximum=65535),
-        username=_optional_str(raw, "username", "mqtt"),
+        username=username,
+        username_env=username_env,
+        username_file=username_file,
         password=password,
         password_env=password_env,
+        password_file=password_file,
         tls=TlsConfig(
             enabled=_bool(tls_raw, "enabled", False, "mqtt.tls"),
             ca_file=_optional_str(tls_raw, "ca_file", "mqtt.tls"),
@@ -269,6 +269,28 @@ def _optional_str(raw: dict[str, Any], key: str, ctx: str) -> str | None:
     if not isinstance(value, str):
         raise ConfigError(f"{ctx}.{key} must be a string or null")
     return value
+
+
+def _secret(raw: dict[str, Any], key: str, ctx: str) -> tuple[str | None, str | None, str | None]:
+    value = _optional_str(raw, key, ctx)
+    env_key = f"{key}_env"
+    file_key = f"{key}_file"
+    env_name = _optional_str(raw, env_key, ctx)
+    file_name = _optional_str(raw, file_key, ctx)
+    configured = [source is not None for source in (value, env_name, file_name)].count(True)
+    if configured > 1:
+        raise ConfigError(f"{ctx}.{key}, {ctx}.{env_key}, and {ctx}.{file_key} are mutually exclusive")
+    if env_name:
+        value = os.getenv(env_name)
+        if value is None:
+            raise ConfigError(f"environment variable {env_name} from {ctx}.{env_key} is not set")
+    if file_name:
+        secret_path = Path(file_name)
+        try:
+            value = secret_path.read_text().strip()
+        except OSError as exc:
+            raise ConfigError(f"cannot read {ctx}.{file_key} {secret_path}: {exc}") from exc
+    return value, env_name, file_name
 
 
 def _str(raw: dict[str, Any], key: str, default: str, ctx: str) -> str:

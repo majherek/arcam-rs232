@@ -409,11 +409,18 @@ Daemon command:
 arcam-daemon --config /etc/arcam-rs232/config.yaml
 ```
 
-MQTT secrets should be passed through environment variables:
+MQTT username and password can be provided directly, through environment
+variables, or through files. Only one source may be configured per field.
 
 ```yaml
 mqtt:
+  username: arcam
+  # username_env: ARCAM_MQTT_USERNAME
+  # username_file: /run/secrets/arcam_mqtt_username
+
   password_env: ARCAM_MQTT_PASSWORD
+  # password: change-me
+  # password_file: /run/secrets/arcam_mqtt_password
 ```
 
 Example deployment files:

@@ -5,7 +5,11 @@ mqtt:
   host: mqtt.example.local
   port: 8883
   username: arcam
+  username_env: null
+  username_file: null
   password_env: ARCAM_MQTT_PASSWORD
+  password: null
+  password_file: null
   tls:
     enabled: true
     ca_file: null

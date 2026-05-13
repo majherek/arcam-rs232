@@ -4,8 +4,11 @@ mqtt:
   host: mosquitto
   port: 1883
   username: null
+  username_env: null
+  username_file: null
   password: null
   password_env: null
+  password_file: null
   tls:
     enabled: false
     ca_file: null

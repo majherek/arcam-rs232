@@ -152,12 +152,18 @@ video-input     video_input     yes   no     read-only video input type
 
 ## Deployment
 
-MQTT passwords can be read from an environment variable instead of the YAML file:
+MQTT username and password can be provided directly, through environment
+variables, or through files. Use only one source per field.
 
 ```yaml
 mqtt:
   username: arcam
+  # username_env: ARCAM_MQTT_USERNAME
+  # username_file: /run/secrets/arcam_mqtt_username
+
   password_env: ARCAM_MQTT_PASSWORD
+  # password: change-me
+  # password_file: /run/secrets/arcam_mqtt_password
 ```
 
 Docker Compose example:
