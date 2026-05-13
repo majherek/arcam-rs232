@@ -9,6 +9,8 @@
 - Added `--protocol-trace` to log raw ARCAM RS232/TCP TX/RX frames as HEX.
 - Changed scan switch state so `state/scan=OFF` is published after the scan
   attempt finishes instead of immediately when the command is accepted.
+- Publish `status/device=online` after the first valid ARCAM status frame,
+  without waiting for the full configured bootstrap scan to finish.
 - Added Docker troubleshooting notes for `docker logs`.
 
 ## v0.2.0

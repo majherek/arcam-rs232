@@ -70,7 +70,6 @@ class DeviceRunner:
             self._subscribe_commands()
             if not self._refresh_configured_state(transport, reader):
                 raise TimeoutError("no bootstrap response from device")
-            self._publish_device_status(ONLINE)
             self._publish_unknown_control_for_missing_power()
             LOGGER.info("%s: bootstrap completed", self.device.id)
             self._complete_scan_requests(initial_scan_requests or [])
@@ -176,6 +175,7 @@ class DeviceRunner:
         value = spec.parse_state(data)
         if value is None:
             return
+        self._publish_device_status(ONLINE)
         zone_topic = f"zone{zone_id}"
         self.state.setdefault(zone_topic, {})[spec.name] = value
         LOGGER.debug("%s: state %s/%s=%s", self.device.id, zone_topic, spec.topic, value)

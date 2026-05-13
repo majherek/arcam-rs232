@@ -126,9 +126,9 @@ The daemon publishes `arcam/daemon = online` on connect, sets MQTT LWT to
 `offline`, and publishes `offline` before clean shutdown.
 
 It also starts a runner for each configured device. The runner connects to the
-configured serial/TCP transport, publishes device availability, reads the core
-state for each configured zone, and keeps the connection alive with configurable
-`power` heartbeats:
+configured serial/TCP transport, publishes device availability after the first
+valid ARCAM status frame, reads configured state for each zone, and keeps the
+connection alive with configurable `power` heartbeats:
 
 ```text
 arcam/daemon = online|offline
