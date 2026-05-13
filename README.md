@@ -240,7 +240,6 @@ Some options can be set directly with documented RS232 commands:
 uv run python main.py --serial /dev/ttyUSB0 --set video-output 1080p
 uv run python main.py --serial /dev/ttyUSB0 --set video-input hdmi
 uv run python main.py --serial /dev/ttyUSB0 --set audio-input digital
-uv run python main.py --serial /dev/ttyUSB0 --set display-brightness l2
 uv run python main.py --serial /dev/ttyUSB0 --set room-eq on
 uv run python main.py --serial /dev/ttyUSB0 --set dolby-volume movie
 uv run python main.py --serial /dev/ttyUSB0 --set lipsync-delay 50
@@ -254,6 +253,35 @@ uv run python main.py --list-set
 ```
 
 Many settings accept `request`, `up`, `down`, `inc`, or `dec` when those values are documented by Arcam.
+
+`--set` only exposes direct RS232 commands documented as setting/changing values. Request-only commands such as power state, display brightness, headphones, mute status, and current source remain under `--get`; controllable equivalents use RC5 aliases where the protocol documents them.
+
+Display brightness command `0x01` is request-only. Use `--get display-brightness` to read it, or RC5 aliases to emulate the front-panel/remote display brightness commands:
+
+```bash
+uv run python main.py --serial /dev/ttyUSB0 --rc5 display-off
+uv run python main.py --serial /dev/ttyUSB0 --rc5 display-l1
+uv run python main.py --serial /dev/ttyUSB0 --rc5 display-l2
+uv run python main.py --serial /dev/ttyUSB0 --rc5 display-l3
+```
+
+Value formats used by direct settings:
+
+- `signed EQ value: -10..10` is used by tone and picture controls such as `bass`, `treble`, `brightness`, `contrast`, and `colour`.
+- `signed offset value: -15..15` is used by controls such as `balance`, `dplii-dimension`, and `dolby-calibration-offset`.
+- `trim in 0.25 dB steps` is used by subwoofer trim controls, for example `-2.5`.
+- `delay in milliseconds, 5 ms steps` is used by `lipsync-delay`, for example `50`.
+
+Examples:
+
+```bash
+uv run python main.py --serial /dev/ttyUSB0 --set bass -2
+uv run python main.py --serial /dev/ttyUSB0 --set treble 3
+uv run python main.py --serial /dev/ttyUSB0 --set balance -4
+uv run python main.py --serial /dev/ttyUSB0 --set brightness up
+uv run python main.py --serial /dev/ttyUSB0 --set subwoofer-trim -2.5
+uv run python main.py --serial /dev/ttyUSB0 --set lipsync-delay 50
+```
 
 ## RC5 Emulation
 

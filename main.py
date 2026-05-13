@@ -241,6 +241,10 @@ RC5_COMMANDS = {
     "navigate-down": (0x10, 0x55),
     "menu": (0x10, 0x52),
     "display": (0x10, 0x3B),
+    "display-off": (0x10, 0x1F),
+    "display-l1": (0x10, 0x21),
+    "display-l2": (0x10, 0x23),
+    "display-l3": (0x10, 0x24),
     "direct-toggle": (0x10, 0x0A),
     "direct-on": (0x10, 0x4E),
     "direct-off": (0x10, 0x4F),
@@ -305,7 +309,6 @@ RC5_COMMANDS = {
 }
 
 DIRECT_SET_COMMANDS = {
-    "display-brightness": (0x01, {"off": 0x00, "l1": 0x01, "l2": 0x02, "l3": 0x03, **STEP_CONTROL}),
     "video-selection": (0x0A, {"dvd": 0x00, "sat": 0x01, "av": 0x02, "pvr": 0x03, "vcr": 0x04, **STEP_CONTROL}),
     "audio-input": (0x0B, {"analogue": 0x00, "analog": 0x00, "digital": 0x01, "hdmi": 0x02, **STEP_CONTROL}),
     "video-input": (0x0C, {"auto": 0x00, "hdmi": 0x01, "component": 0x02, "s-video": 0x03, "svideo": 0x03, "cvbs": 0x04, **STEP_CONTROL}),
@@ -313,7 +316,7 @@ DIRECT_SET_COMMANDS = {
     "headphone-override": (0x1F, {"clear": 0x00, "off": 0x00, "set": 0x01, "on": 0x01}),
     "treble": (0x35, "signed_eq"),
     "bass": (0x36, "signed_eq"),
-    "room-eq": (0x37, {"off": 0x00, "on": 0x01, "request": REQUEST}),
+    "room-eq": (0x37, {"off": 0xF2, "on": 0xF1, "request": REQUEST}),
     "dolby-volume": (0x38, {"off": 0x00, "music": 0x01, "movie": 0x02, "request": REQUEST}),
     "dolby-leveller": (0x39, "dolby_leveller"),
     "dolby-calibration-offset": (0x3A, "signed_offset"),
@@ -336,6 +339,17 @@ DIRECT_SET_COMMANDS = {
     "zone1-osd": (0x4E, {"request": REQUEST, "on": 0xF1, "off": 0xF2}),
     "video-output-switching": (0x4F, {"hdmi1-auto": 0x00, "hdmi2-auto": 0x01, "hdmi1": 0x02, "hdmi2": 0x03, "hdmi1-and-2": 0x04, **STEP_CONTROL}),
     "output-frame-rate": (0x50, {"auto": 0x00, "follow-source": 0x01, "50hz": 0x02, "60hz": 0x03, **STEP_CONTROL}),
+}
+
+DIRECT_VALUE_HELP = {
+    "int": "integer byte: 0..255",
+    "signed_eq": "signed EQ value: -10..10",
+    "signed_eq_step": "signed EQ value: -10..10, or request/up/down/inc/dec",
+    "signed_offset": "signed offset value: -15..15",
+    "dolby_leveller": "0..9, or off",
+    "quarter_db": "trim in 0.25 dB steps: -10.0..10.0",
+    "sub_stereo_trim": "trim in 0.25 dB steps: -10.0..0.0",
+    "lipsync_ms": "delay in milliseconds, 5 ms steps",
 }
 
 DIRECT_GET_COMMANDS = {
@@ -1019,7 +1033,7 @@ def print_direct_settings():
         if isinstance(value_parser, dict):
             values = ", ".join(sorted(value_parser.keys()))
         else:
-            values = value_parser
+            values = DIRECT_VALUE_HELP.get(value_parser, value_parser)
         print(f"{name}: {values}")
 
 
