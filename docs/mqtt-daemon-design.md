@@ -1,6 +1,6 @@
 # MQTT Daemon Design
 
-This document defines the planned MQTT daemon for `arcam-rs232`.
+This document defines the MQTT daemon for `arcam-rs232`.
 
 The daemon is a long-running bridge between one or more Arcam AVR500/AVR600/AV888 devices and a plain MQTT broker such as Mosquitto. It is intended to integrate cleanly with openHAB through Generic MQTT Things, without requiring a custom openHAB binding.
 
@@ -98,6 +98,7 @@ status/last_error = text
 ```
 
 `status/device` means whether the Arcam device is reachable and responding. It is not the same as Zone 1 power.
+`status/last_seen` and `status/last_error` are planned diagnostics topics.
 
 ## Zone Topics
 
@@ -305,7 +306,9 @@ core_refresh_seconds = 30
 burst_collection_seconds = 5
 ```
 
-Heartbeat uses `get power` for Zone 1 by default. A profile may choose another harmless request if needed.
+The current runner sends `get power` to every enabled zone on each heartbeat, so
+zone power states stay fresh even when Zone 1 is in standby. A future profile may
+choose another harmless request if needed.
 
 When heartbeat fails repeatedly:
 
@@ -346,7 +349,7 @@ systemd service
 
 The same YAML config file should be usable in both modes.
 
-Planned command:
+Daemon command:
 
 ```bash
 arcam-daemon --config /etc/arcam-rs232/config.yaml
@@ -382,4 +385,3 @@ Zone power controls should use only:
 ```text
 status/device == online
 ```
-

@@ -39,8 +39,14 @@ class MqttBridge:
         self.client.disconnect()
 
     def publish_daemon_status(self, payload: str) -> PublishResult:
-        self.client.publish(self.config.daemon_topic, payload, qos=self.config.qos, retain=self.config.retain)
+        self.publish(self.config.daemon_topic, payload)
         return PublishResult(topic=self.config.daemon_topic, payload=payload)
+
+    def publish(self, topic: str, payload: str, retain: bool | None = None) -> PublishResult:
+        effective_retain = self.config.retain if retain is None else retain
+        result = self.client.publish(topic, payload, qos=self.config.qos, retain=effective_retain)
+        result.wait_for_publish()
+        return PublishResult(topic=topic, payload=payload)
 
     def _configure_tls(self, config: MqttConfig):
         self.client.tls_set(

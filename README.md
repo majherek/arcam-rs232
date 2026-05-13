@@ -84,6 +84,24 @@ uv run arcam-daemon --config config.example.yaml --once
 
 The current daemon runtime publishes `arcam/daemon = online` on connect, sets MQTT LWT to `offline`, and publishes `offline` before clean shutdown. Device polling and command handling are planned next.
 
+It also starts a runner for each configured device. The runner connects to the
+configured serial/TCP transport, publishes device availability, reads the core
+state for each configured zone, and keeps the connection alive with configurable
+`power` heartbeats:
+
+```text
+arcam/daemon = online|offline
+arcam/av888/status/device = online|offline
+arcam/av888/zone1/status/control = available|unavailable|stale|unknown
+arcam/av888/zone1/state/power = on|standby
+arcam/av888/zone1/state/source = AV|PVR|SAT|...
+arcam/av888/zone1/state/volume = 11.5
+arcam/av888/zone1/state/mute = muted|unmuted
+```
+
+Command subscriptions are not implemented yet. State is published only from
+real ARCAM status frames/responses, not from RC5 acknowledgements.
+
 ## Basic Usage
 
 Sniff/listen on a serial port:

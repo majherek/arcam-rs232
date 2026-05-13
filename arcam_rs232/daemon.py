@@ -1,10 +1,12 @@
 import argparse
 import json
+import threading
 import time
 from dataclasses import asdict
 
 from .config import ConfigError, load_config
 from .mqtt import MqttBridge
+from .runner import DeviceRunner
 
 
 def build_parser():
@@ -29,16 +31,26 @@ def arcam_daemon():
     bridge = MqttBridge(config.mqtt)
     bridge.connect()
     print(f"Published daemon status online to {config.mqtt.daemon_topic}")
+    runners = [DeviceRunner(device=device, mqtt=bridge) for device in config.devices.values()]
+    threads: list[threading.Thread] = []
     try:
         if args.once:
             time.sleep(0.2)
             return
-        print("Daemon MQTT status loop is running. Device runtime is not implemented yet.")
+        for runner in runners:
+            thread = threading.Thread(target=runner.run_forever, name=f"arcam-{runner.device.id}", daemon=True)
+            thread.start()
+            threads.append(thread)
+        print(f"Daemon is running with {len(threads)} device runner(s).")
         while True:
             time.sleep(3600)
     except KeyboardInterrupt:
         print("Stopping daemon.")
     finally:
+        for runner in runners:
+            runner.stop()
+        for thread in threads:
+            thread.join(timeout=3)
         bridge.disconnect()
 
 
