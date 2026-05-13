@@ -37,6 +37,12 @@ Thing mqtt:topic:arcamAV888
 arcam/daemon = online | offline
 ```
 
+It also exposes a manual scan command:
+
+```text
+arcam/daemon/cmd/scan = now
+```
+
 `arcamAV888` availability follows the physical receiver status:
 
 ```text

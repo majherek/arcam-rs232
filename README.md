@@ -134,6 +134,28 @@ when that zone's `state/power` is `on`.
 State is published only from real ARCAM status frames/responses, not from RC5
 acknowledgements.
 
+When a device is offline, reconnect attempts use exponential backoff:
+
+- `offline_retry_seconds`: first retry delay after a failed connection/bootstrap.
+- `offline_backoff_max_seconds`: maximum retry delay after repeated failures.
+
+For example, `offline_retry_seconds: 10` and `offline_backoff_max_seconds: 60`
+means retry delays of roughly `10`, `20`, `40`, `60`, `60` seconds while the
+receiver stays unreachable.
+
+You can trigger an immediate scan/retry over MQTT without waiting for the next
+offline retry window:
+
+```text
+arcam/daemon/cmd/scan = now
+arcam/av888/cmd/scan = now
+```
+
+The first topic wakes all configured device runners. The second wakes only the
+selected device. If a runner is offline, the command interrupts the current
+backoff sleep and starts a retry immediately. If a runner is already online, it
+refreshes the configured state.
+
 The MQTT runtime is backed by a command/state registry. Zone `core` and
 `extended` lists in the YAML config decide which values are requested at
 startup. List all available fields with:

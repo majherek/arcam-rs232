@@ -36,6 +36,9 @@ devices:
       heartbeat_seconds: 5
       missed_heartbeats_limit: 2
       offline_retry_seconds: 10
+      # Increase this if the receiver is usually physically powered off.
+      # Send arcam/daemon/cmd/scan=now or arcam/av888/cmd/scan=now to wake
+      # the runner immediately after restoring power.
       offline_backoff_max_seconds: 60
       core_refresh_seconds: 30
       burst_collection_seconds: 5

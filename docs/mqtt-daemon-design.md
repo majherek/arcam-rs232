@@ -370,6 +370,23 @@ When heartbeat fails repeatedly:
 - Publish zone `status/control = stale`.
 - Keep retained last known states, but mark them stale through zone status.
 
+`offline_retry_seconds` is the first retry delay after a failed connection or
+bootstrap. `offline_backoff_max_seconds` is the maximum delay after exponential
+backoff. For example, `10` and `60` produce retry delays of roughly `10`, `20`,
+`40`, `60`, `60` seconds.
+
+The daemon also supports explicit scan wake-up commands:
+
+```text
+arcam/daemon/cmd/scan = now
+arcam/<device_id>/cmd/scan = now
+```
+
+The global command wakes all configured device runners. The per-device command
+wakes only the selected runner. If a runner is offline, the command interrupts
+the current backoff sleep and starts a retry immediately. If a runner is already
+online, it refreshes the configured state. Retained scan commands are ignored.
+
 ## Retain Policy
 
 Retain should be configurable.

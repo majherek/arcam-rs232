@@ -9,6 +9,9 @@ Thing mqtt:topic:arcamDaemon "Arcam RS232 daemon" (mqtt:broker:mybroker) [
             on="online",
             off="offline"
         ]
+        Type string : scan "Scan Devices" [
+            commandTopic="arcam/daemon/cmd/scan"
+        ]
 }
 
 Thing mqtt:topic:arcamAV888 "Arcam AV888" (mqtt:broker:mybroker) [

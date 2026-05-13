@@ -48,6 +48,49 @@ def redacted_config(config) -> dict[str, Any]:
     return data
 
 
+def daemon_topic_prefix(daemon_topic: str) -> str:
+    topic = daemon_topic.strip("/")
+    if "/" not in topic:
+        return ""
+    return topic.rsplit("/", 1)[0]
+
+
+def subscribe_scan_commands(bridge: MqttBridge, config, runners: list[DeviceRunner]):
+    by_id = {runner.device.id: runner for runner in runners}
+    daemon_prefix = daemon_topic_prefix(config.mqtt.daemon_topic)
+
+    def scan_all(message):
+        if message.retain:
+            return
+        payload = message.payload.decode("utf-8", "replace").strip().lower()
+        if payload not in ("", "scan", "now", "1", "true", "on"):
+            return
+        print("Received daemon scan request.")
+        for runner in runners:
+            runner.wake()
+
+    def scan_device(message):
+        if message.retain:
+            return
+        payload = message.payload.decode("utf-8", "replace").strip().lower()
+        if payload not in ("", "scan", "now", "1", "true", "on"):
+            return
+        topic = message.topic.strip("/")
+        suffix = "/cmd/scan"
+        if not daemon_prefix or not topic.endswith(suffix):
+            return
+        device_id = topic[len(daemon_prefix) + 1 : -len(suffix)]
+        runner = by_id.get(device_id)
+        if runner is None:
+            return
+        print(f"Received scan request for {device_id}.")
+        runner.wake()
+
+    bridge.subscribe(f"{config.mqtt.daemon_topic}/cmd/scan", scan_all)
+    if daemon_prefix:
+        bridge.subscribe(f"{daemon_prefix}/+/cmd/scan", scan_device)
+
+
 def arcam_daemon():
     args = build_parser().parse_args()
     if args.list_specs:
@@ -67,6 +110,7 @@ def arcam_daemon():
     bridge.connect()
     print(f"Published daemon status online to {config.mqtt.daemon_topic}")
     runners = [DeviceRunner(device=device, mqtt=bridge) for device in config.devices.values()]
+    subscribe_scan_commands(bridge, config, runners)
     threads: list[threading.Thread] = []
     try:
         if args.once:

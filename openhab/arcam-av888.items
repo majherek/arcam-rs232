@@ -1,4 +1,5 @@
 Switch Arcam_Daemon_Status "Arcam daemon" { channel="mqtt:topic:arcamDaemon:status" }
+String Arcam_Daemon_Scan "Scan Arcam devices" { channel="mqtt:topic:arcamDaemon:scan" }
 Switch Arcam_AV888_Device_Status "AV888 device" { channel="mqtt:topic:arcamAV888:device_status" }
 
 String Arcam_AV888_Zone1_Control "Zone 1 control [%s]" { channel="mqtt:topic:arcamAV888:zone1_control" }

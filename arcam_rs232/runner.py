@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import socket
+import threading
 import time
 from dataclasses import dataclass, field
 from queue import Empty, Queue
@@ -21,6 +22,7 @@ class DeviceRunner:
     command_queue: Queue["MqttCommand"] = field(default_factory=Queue)
     subscribed: bool = False
     published: dict[str, str] = field(default_factory=dict)
+    wake_event: threading.Event = field(default_factory=threading.Event)
 
     def run_forever(self):
         retry_delay = self.device.polling.offline_retry_seconds
@@ -32,11 +34,16 @@ class DeviceRunner:
                 self._publish_device_status(OFFLINE)
                 self._publish_all_zone_control("stale")
                 print(f"{self.device.id}: connection failed: {exc}")
-                time.sleep(retry_delay)
+                self.wake_event.wait(retry_delay)
+                self.wake_event.clear()
                 retry_delay = min(retry_delay * 2, self.device.polling.offline_backoff_max_seconds)
 
     def stop(self):
         self.stop_requested = True
+        self.wake()
+
+    def wake(self):
+        self.wake_event.set()
 
     def _run_connected(self):
         transport = make_config_transport(self.device.transport)
@@ -60,6 +67,11 @@ class DeviceRunner:
                     command = None
                 if command is not None:
                     self._execute_command(transport, reader, command)
+                    continue
+                if self.wake_event.is_set():
+                    self.wake_event.clear()
+                    self._refresh_configured_state(transport, reader)
+                    next_heartbeat = time.monotonic() + self.device.polling.heartbeat_seconds
                     continue
                 self._collect(transport, reader, 0.05)
                 if time.monotonic() < next_heartbeat:
