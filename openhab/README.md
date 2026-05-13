@@ -40,8 +40,12 @@ arcam/daemon = online | offline
 It also exposes a manual scan command:
 
 ```text
-arcam/daemon/cmd/scan = now
+arcam/daemon/cmd/scan = ON
+arcam/daemon/state/scan = OFF
 ```
+
+The scan channel is a `Switch`: OpenHAB sends `ON`, and the daemon publishes
+`OFF` after accepting the scan request.
 
 `arcamAV888` availability follows the physical receiver status:
 

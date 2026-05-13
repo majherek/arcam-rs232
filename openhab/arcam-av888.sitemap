@@ -2,7 +2,7 @@ sitemap arcam_av888 label="Arcam AV888"
 {
     Frame label="Bridge" {
         Text item=Arcam_Daemon_Status
-        Switch item=Arcam_Daemon_Scan mappings=[now="Scan"]
+        Switch item=Arcam_Daemon_Scan mappings=[ON="Scan"]
         Text item=Arcam_AV888_Device_Status visibility=[Arcam_Daemon_Status==ON]
     }
 

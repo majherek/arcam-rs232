@@ -156,6 +156,14 @@ selected device. If a runner is offline, the command interrupts the current
 backoff sleep and starts a retry immediately. If a runner is already online, it
 refreshes the configured state.
 
+For OpenHAB switch controls, the daemon also publishes scan state back to `OFF`
+after accepting a scan request:
+
+```text
+arcam/daemon/state/scan = OFF
+arcam/av888/state/scan = OFF
+```
+
 The MQTT runtime is backed by a command/state registry. Zone `core` and
 `extended` lists in the YAML config decide which values are requested at
 startup. List all available fields with:

@@ -58,22 +58,24 @@ def daemon_topic_prefix(daemon_topic: str) -> str:
 def subscribe_scan_commands(bridge: MqttBridge, config, runners: list[DeviceRunner]):
     by_id = {runner.device.id: runner for runner in runners}
     daemon_prefix = daemon_topic_prefix(config.mqtt.daemon_topic)
+    daemon_scan_state_topic = f"{config.mqtt.daemon_topic}/state/scan"
+
+    def valid_scan_payload(message) -> bool:
+        if message.retain:
+            return False
+        payload = message.payload.decode("utf-8", "replace").strip().lower()
+        return payload in ("", "scan", "now", "1", "true", "on")
 
     def scan_all(message):
-        if message.retain:
-            return
-        payload = message.payload.decode("utf-8", "replace").strip().lower()
-        if payload not in ("", "scan", "now", "1", "true", "on"):
+        if not valid_scan_payload(message):
             return
         print("Received daemon scan request.")
         for runner in runners:
             runner.wake()
+        bridge.publish(daemon_scan_state_topic, "OFF")
 
     def scan_device(message):
-        if message.retain:
-            return
-        payload = message.payload.decode("utf-8", "replace").strip().lower()
-        if payload not in ("", "scan", "now", "1", "true", "on"):
+        if not valid_scan_payload(message):
             return
         topic = message.topic.strip("/")
         suffix = "/cmd/scan"
@@ -85,10 +87,14 @@ def subscribe_scan_commands(bridge: MqttBridge, config, runners: list[DeviceRunn
             return
         print(f"Received scan request for {device_id}.")
         runner.wake()
+        bridge.publish(f"{daemon_prefix}/{device_id}/state/scan", "OFF")
 
     bridge.subscribe(f"{config.mqtt.daemon_topic}/cmd/scan", scan_all)
+    bridge.publish(daemon_scan_state_topic, "OFF")
     if daemon_prefix:
         bridge.subscribe(f"{daemon_prefix}/+/cmd/scan", scan_device)
+        for runner in runners:
+            bridge.publish(f"{daemon_prefix}/{runner.device.id}/state/scan", "OFF")
 
 
 def arcam_daemon():

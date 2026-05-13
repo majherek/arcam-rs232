@@ -9,8 +9,11 @@ Thing mqtt:topic:arcamDaemon "Arcam RS232 daemon" (mqtt:broker:mybroker) [
             on="online",
             off="offline"
         ]
-        Type string : scan "Scan Devices" [
-            commandTopic="arcam/daemon/cmd/scan"
+        Type switch : scan "Scan Devices" [
+            stateTopic="arcam/daemon/state/scan",
+            commandTopic="arcam/daemon/cmd/scan",
+            on="ON",
+            off="OFF"
         ]
 }
 
