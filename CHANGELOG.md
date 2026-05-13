@@ -20,6 +20,7 @@
 - Added MQTT support for generic named RC5 commands through `cmd/rc5`, including
   the `mode` RC5 alias.
 - Added MQTT and OpenHAB support for `sub-stereo-trim` / `sub_stereo_trim`.
+- Added MQTT and OpenHAB support for `subwoofer-trim` / `subwoofer_trim`.
 - Changed the OpenHAB volume control example to a slider capped at `50 dB`.
 - Added Docker troubleshooting notes for `docker logs`.
 

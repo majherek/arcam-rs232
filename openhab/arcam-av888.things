@@ -72,6 +72,10 @@ Thing mqtt:topic:arcamAV888 "Arcam AV888" (mqtt:broker:mybroker) [
             stateTopic="arcam/av888/zone1/state/sub_stereo_trim",
             commandTopic="arcam/av888/zone1/cmd/sub_stereo_trim"
         ]
+        Type number : zone1_subwoofer_trim "Zone 1 Subwoofer Trim" [
+            stateTopic="arcam/av888/zone1/state/subwoofer_trim",
+            commandTopic="arcam/av888/zone1/cmd/subwoofer_trim"
+        ]
         Type string : zone1_rc5 "Zone 1 RC5 Command" [
             commandTopic="arcam/av888/zone1/cmd/rc5"
         ]

@@ -16,6 +16,7 @@ from .protocol import (
     SOURCE_MAP,
     VIDEO_INPUT_TYPE,
     build_frame,
+    quarter_db_to_byte,
     rc5_frame_from_alias,
     source_to_rc5_alias,
     sub_stereo_trim_to_byte,
@@ -107,6 +108,19 @@ def _sub_stereo_trim_value(data: bytes) -> str | None:
     return f"0x{value:02X}"
 
 
+def _quarter_db_value(data: bytes) -> str | None:
+    if len(data) != 1:
+        return None
+    value = data[0]
+    if value == 0x00:
+        return "0"
+    if 0x01 <= value <= 0x28:
+        return str(value * 0.25)
+    if 0x81 <= value <= 0xA8:
+        return str(-((value - 0x80) * 0.25))
+    return f"0x{value:02X}"
+
+
 def _mute_value(data: bytes) -> str | None:
     if len(data) != 1:
         return None
@@ -182,6 +196,10 @@ def _build_sub_stereo_trim(zone: int, payload: str) -> bytes:
     return build_frame(zone, 0x45, [sub_stereo_trim_to_byte(payload)])
 
 
+def _build_subwoofer_trim(zone: int, payload: str) -> bytes:
+    return build_frame(zone, 0x3F, [quarter_db_to_byte(payload)])
+
+
 def _build_rc5(zone: int, payload: str) -> bytes:
     return rc5_frame_from_alias(zone, payload)
 
@@ -194,6 +212,7 @@ MQTT_SPECS = (
     MqttSpec("room-eq", "room_eq", "on|off", 0x37, 0x37, _mapped_value(ROOM_EQ), _build_room_eq),
     MqttSpec("dolby-volume", "dolby_volume", "off|music|movie", 0x38, 0x38, _mapped_value(DOLBY_VOLUME), _build_dolby_volume),
     MqttSpec("direct", "direct", "on|off", 0x0F, 0x0F, _mapped_value(DIRECT_MODE), _build_direct),
+    MqttSpec("subwoofer-trim", "subwoofer_trim", "numeric dB value in 0.25 dB steps, -10.0..10.0", 0x3F, 0x3F, _quarter_db_value, _build_subwoofer_trim),
     MqttSpec("sub-stereo-trim", "sub_stereo_trim", "numeric dB value in 0.25 dB steps, -10.0..0.0", 0x45, 0x45, _sub_stereo_trim_value, _build_sub_stereo_trim),
     MqttSpec("rc5", "rc5", "named RC5 alias, e.g. mode|display-off|volume-up", None, None, None, _build_rc5),
     MqttSpec("decode-2ch", "decode_2ch", "read-only decode mode", 0x10, 0x10, _mapped_value(DECODE_2CH), None),

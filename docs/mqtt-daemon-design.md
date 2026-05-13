@@ -153,6 +153,8 @@ cmd/volume = numeric value
 Sub stereo trim:
 
 ```text
+state/subwoofer_trim = numeric dB value, for example -2.5
+cmd/subwoofer_trim = numeric dB value in 0.25 dB steps, -10.0..10.0
 state/sub_stereo_trim = numeric dB value, for example -1.25
 cmd/sub_stereo_trim = numeric dB value in 0.25 dB steps, -10.0..0.0
 ```

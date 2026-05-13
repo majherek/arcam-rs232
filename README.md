@@ -211,6 +211,7 @@ mute            mute            yes   yes    on|off command, muted|unmuted state
 room-eq         room_eq         yes   yes    on|off
 dolby-volume    dolby_volume    yes   yes    off|music|movie
 direct          direct          yes   yes    on|off
+subwoofer-trim  subwoofer_trim  yes   yes    numeric dB value in 0.25 dB steps, -10.0..10.0
 sub-stereo-trim sub_stereo_trim yes   yes    numeric dB value in 0.25 dB steps, -10.0..0.0
 rc5             rc5             no    yes    named RC5 alias, e.g. mode|display-off|volume-up
 decode-2ch      decode_2ch      yes   no     read-only decode mode
