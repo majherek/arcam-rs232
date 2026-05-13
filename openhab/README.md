@@ -48,4 +48,16 @@ The sitemap uses `visibility=[... AND ...]` for daemon/device readiness and
 visible whenever the daemon and device are online; other Zone 1 controls are
 visible only when `zone1/status/control` is `available`.
 
+Logical on/off fields use MQTT `switch` channels:
+
+```text
+power: on <-> standby
+mute: muted <-> unmuted
+room_eq: On <-> Off
+direct: On <-> Off
+```
+
+`zoneX/status/control` stays a string because it can be `available`,
+`unavailable`, `stale`, or `unknown`.
+
 Reference: https://www.openhab.org/docs/ui/sitemaps

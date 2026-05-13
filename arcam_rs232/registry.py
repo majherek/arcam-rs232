@@ -136,8 +136,10 @@ def _build_volume(zone: int, payload: str) -> bytes:
 
 def _build_mute(zone: int, payload: str) -> bytes:
     value = payload.strip().lower()
+    aliases = {"muted": "on", "unmuted": "off"}
+    value = aliases.get(value, value)
     if value not in ("on", "off"):
-        raise ValueError("mute must be on or off")
+        raise ValueError("mute must be on, off, muted, or unmuted")
     return rc5_frame_from_alias(zone, zone_rc5_alias(zone, f"mute-{value}"))
 
 

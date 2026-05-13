@@ -4,8 +4,10 @@ Thing mqtt:topic:arcamDaemon "Arcam RS232 daemon" (mqtt:broker:mybroker) [
     payloadNotAvailable="offline"
 ] {
     Channels:
-        Type string : status "Daemon Status" [
-            stateTopic="arcam/daemon"
+        Type switch : status "Daemon Status" [
+            stateTopic="arcam/daemon",
+            on="online",
+            off="offline"
         ]
 }
 
@@ -15,16 +17,20 @@ Thing mqtt:topic:arcamAV888 "Arcam AV888" (mqtt:broker:mybroker) [
     payloadNotAvailable="offline"
 ] {
     Channels:
-        Type string : device_status "Device Status" [
-            stateTopic="arcam/av888/status/device"
+        Type switch : device_status "Device Status" [
+            stateTopic="arcam/av888/status/device",
+            on="online",
+            off="offline"
         ]
 
         Type string : zone1_control "Zone 1 Control" [
             stateTopic="arcam/av888/zone1/status/control"
         ]
-        Type string : zone1_power "Zone 1 Power" [
+        Type switch : zone1_power "Zone 1 Power" [
             stateTopic="arcam/av888/zone1/state/power",
-            commandTopic="arcam/av888/zone1/cmd/power"
+            commandTopic="arcam/av888/zone1/cmd/power",
+            on="on",
+            off="standby"
         ]
         Type string : zone1_source "Zone 1 Source" [
             stateTopic="arcam/av888/zone1/state/source",
@@ -34,21 +40,27 @@ Thing mqtt:topic:arcamAV888 "Arcam AV888" (mqtt:broker:mybroker) [
             stateTopic="arcam/av888/zone1/state/volume",
             commandTopic="arcam/av888/zone1/cmd/volume"
         ]
-        Type string : zone1_mute "Zone 1 Mute" [
+        Type switch : zone1_mute "Zone 1 Mute" [
             stateTopic="arcam/av888/zone1/state/mute",
-            commandTopic="arcam/av888/zone1/cmd/mute"
+            commandTopic="arcam/av888/zone1/cmd/mute",
+            on="muted",
+            off="unmuted"
         ]
-        Type string : zone1_room_eq "Zone 1 Room EQ" [
+        Type switch : zone1_room_eq "Zone 1 Room EQ" [
             stateTopic="arcam/av888/zone1/state/room_eq",
-            commandTopic="arcam/av888/zone1/cmd/room_eq"
+            commandTopic="arcam/av888/zone1/cmd/room_eq",
+            on="On",
+            off="Off"
         ]
         Type string : zone1_dolby_volume "Zone 1 Dolby Volume" [
             stateTopic="arcam/av888/zone1/state/dolby_volume",
             commandTopic="arcam/av888/zone1/cmd/dolby_volume"
         ]
-        Type string : zone1_direct "Zone 1 Direct" [
+        Type switch : zone1_direct "Zone 1 Direct" [
             stateTopic="arcam/av888/zone1/state/direct",
-            commandTopic="arcam/av888/zone1/cmd/direct"
+            commandTopic="arcam/av888/zone1/cmd/direct",
+            on="On",
+            off="Off"
         ]
         Type string : zone1_decode_2ch "Zone 1 Decode 2ch" [
             stateTopic="arcam/av888/zone1/state/decode_2ch"
@@ -72,16 +84,20 @@ Thing mqtt:topic:arcamAV888 "Arcam AV888" (mqtt:broker:mybroker) [
         Type string : zone2_control "Zone 2 Control" [
             stateTopic="arcam/av888/zone2/status/control"
         ]
-        Type string : zone2_power "Zone 2 Power" [
+        Type switch : zone2_power "Zone 2 Power" [
             stateTopic="arcam/av888/zone2/state/power",
-            commandTopic="arcam/av888/zone2/cmd/power"
+            commandTopic="arcam/av888/zone2/cmd/power",
+            on="on",
+            off="standby"
         ]
 
         Type string : zone3_control "Zone 3 Control" [
             stateTopic="arcam/av888/zone3/status/control"
         ]
-        Type string : zone3_power "Zone 3 Power" [
+        Type switch : zone3_power "Zone 3 Power" [
             stateTopic="arcam/av888/zone3/state/power",
-            commandTopic="arcam/av888/zone3/cmd/power"
+            commandTopic="arcam/av888/zone3/cmd/power",
+            on="on",
+            off="standby"
         ]
 }
