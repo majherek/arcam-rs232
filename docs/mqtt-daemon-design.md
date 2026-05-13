@@ -245,17 +245,35 @@ zone3 power on ack
 
 ## Command Handling
 
-The current daemon subscribes to the core command topics:
+The daemon uses a command/state registry. Configured zone `core` and `extended`
+lists select which values are requested during bootstrap, and the same registry
+defines which MQTT command topics are writable.
+
+The current daemon subscribes to command topics in this shape:
 
 ```text
 arcam/<device_id>/zoneX/cmd/power
 arcam/<device_id>/zoneX/cmd/source
 arcam/<device_id>/zoneX/cmd/volume
 arcam/<device_id>/zoneX/cmd/mute
+arcam/<device_id>/zoneX/cmd/room_eq
+arcam/<device_id>/zoneX/cmd/dolby_volume
+arcam/<device_id>/zoneX/cmd/direct
 ```
 
 Retained MQTT command messages are ignored to avoid replaying old commands when
 the daemon reconnects.
+
+The current read-only extended state allowlist is:
+
+```text
+decode_2ch
+decode_mch
+incoming_audio
+sample_rate
+audio_input
+video_input
+```
 
 For every MQTT command:
 
@@ -302,6 +320,30 @@ mute
 The daemon should try to know these values for each enabled zone.
 
 If a zone field is unknown after bootstrap, it may remain `unknown` until the device reports it. This should not block other zones from operating.
+
+## Extended State
+
+Extended state is opt-in per zone through config. Example:
+
+```yaml
+zones:
+  zone1:
+    core:
+      - power
+      - source
+      - volume
+      - mute
+    extended:
+      - room-eq
+      - dolby-volume
+      - direct
+      - decode-2ch
+      - decode-mch
+      - incoming-audio
+      - sample-rate
+      - audio-input
+      - video-input
+```
 
 ## Polling
 

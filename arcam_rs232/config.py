@@ -69,6 +69,7 @@ class ZoneConfig:
     control_requires_power_on: bool = True
     power_command_allowed_when_device_online: bool = True
     core: tuple[str, ...] = ("power", "source", "volume", "mute")
+    extended: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -197,14 +198,16 @@ def _parse_commands(raw: dict[str, Any], device_id: str) -> CommandConfig:
 
 def _parse_zone(zone_name: str, raw: dict[str, Any]) -> ZoneConfig:
     ctx = f"zone {zone_name}"
-    core = raw.get("core", ["power", "source", "volume", "mute"])
-    if not isinstance(core, list) or not all(isinstance(item, str) for item in core):
-        raise ConfigError(f"{ctx}.core must be a list of strings")
+    core = _str_list(raw, "core", ["power", "source", "volume", "mute"], ctx)
+    extended = _str_list(raw, "extended", [], ctx)
+    _validate_spec_names(core, f"{ctx}.core")
+    _validate_spec_names(extended, f"{ctx}.extended")
     return ZoneConfig(
         enabled=_bool(raw, "enabled", True, ctx),
         control_requires_power_on=_bool(raw, "control_requires_power_on", True, ctx),
         power_command_allowed_when_device_online=_bool(raw, "power_command_allowed_when_device_online", True, ctx),
         core=tuple(core),
+        extended=tuple(extended),
     )
 
 
@@ -212,6 +215,21 @@ def _required_mapping(raw: dict[str, Any], key: str, ctx: str) -> dict[str, Any]
     if key not in raw:
         raise ConfigError(f"{ctx}.{key} is required")
     return _ensure_mapping(raw[key], f"{ctx}.{key}")
+
+
+def _str_list(raw: dict[str, Any], key: str, default: list[str], ctx: str) -> list[str]:
+    value = raw.get(key, default)
+    if not isinstance(value, list) or not all(isinstance(item, str) for item in value):
+        raise ConfigError(f"{ctx}.{key} must be a list of strings")
+    return value
+
+
+def _validate_spec_names(names: list[str], ctx: str):
+    from .registry import spec_by_name
+
+    unknown = [name for name in names if spec_by_name(name) is None]
+    if unknown:
+        raise ConfigError(f"{ctx} contains unknown MQTT spec(s): {', '.join(unknown)}")
 
 
 def _optional_mapping(raw: dict[str, Any], key: str, ctx: str) -> dict[str, Any]:

@@ -57,6 +57,16 @@ devices:
           - source
           - volume
           - mute
+        extended:
+          - room-eq
+          - dolby-volume
+          - direct
+          - decode-2ch
+          - decode-mch
+          - incoming-audio
+          - sample-rate
+          - audio-input
+          - video-input
 
       zone2:
         enabled: true

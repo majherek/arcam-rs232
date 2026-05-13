@@ -115,6 +115,30 @@ when that zone's `state/power` is `on`.
 State is published only from real ARCAM status frames/responses, not from RC5
 acknowledgements.
 
+The MQTT runtime is backed by a command/state registry. Zone `core` and
+`extended` lists in the YAML config decide which values are requested at
+startup. The current extended allowlist includes:
+
+```text
+room_eq
+dolby_volume
+direct
+decode_2ch
+decode_mch
+incoming_audio
+sample_rate
+audio_input
+video_input
+```
+
+The writable extended topics currently are:
+
+```text
+arcam/av888/zone1/cmd/room_eq = on|off
+arcam/av888/zone1/cmd/dolby_volume = off|music|movie
+arcam/av888/zone1/cmd/direct = on|off
+```
+
 ## Basic Usage
 
 Sniff/listen on a serial port:

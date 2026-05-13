@@ -7,32 +7,9 @@ from queue import Empty, Queue
 
 from .config import DeviceConfig
 from .mqtt import OFFLINE, ONLINE, MqttBridge
-from .protocol import (
-    FrameReader,
-    SOURCE_MAP,
-    build_frame,
-    hex_bytes,
-    rc5_frame_from_alias,
-    request_frame,
-    source_to_rc5_alias,
-    volume_to_byte,
-    zone_rc5_alias,
-)
+from .protocol import FrameReader, hex_bytes, request_frame
+from .registry import MqttSpec, command_spec_for_topic, spec_for_frame, specs_for_names
 from .transport import make_config_transport
-
-
-COMMAND_TO_STATE = {
-    0x00: "power",
-    0x0D: "volume",
-    0x0E: "mute",
-    0x1D: "source",
-}
-CORE_COMMANDS = {
-    "power": 0x00,
-    "volume": 0x0D,
-    "mute": 0x0E,
-    "source": 0x1D,
-}
 
 
 @dataclass
@@ -69,7 +46,7 @@ class DeviceRunner:
             self._publish_device_status(ONLINE)
             self._publish_all_zone_control("unknown")
             self._subscribe_commands()
-            self._refresh_core(transport, reader)
+            self._refresh_configured_state(transport, reader)
 
             next_heartbeat = time.monotonic()
             while not self.stop_requested:
@@ -99,16 +76,15 @@ class DeviceRunner:
             self._publish_all_zone_control("stale")
             self._discard_pending_commands()
 
-    def _refresh_core(self, transport, reader: FrameReader):
+    def _refresh_configured_state(self, transport, reader: FrameReader):
         for zone_name, zone in self.device.zones.items():
             if not zone.enabled:
                 continue
             zone_id = _zone_number(zone_name)
-            for item in zone.core:
-                command = CORE_COMMANDS.get(item)
-                if command is None:
+            for spec in specs_for_names((*zone.core, *zone.extended)):
+                if not spec.can_read:
                     continue
-                transport.write(request_frame(zone_id, command))
+                transport.write(request_frame(zone_id, spec.request_command))
                 self._collect(transport, reader, self.device.transport.timeout_seconds)
 
     def _poll_power(self, transport, reader: FrameReader) -> bool:
@@ -142,16 +118,16 @@ class DeviceRunner:
         zone_id = raw[1]
         command = raw[2]
         data = raw[5:-1]
-        state_name = COMMAND_TO_STATE.get(command)
-        if state_name is None:
+        spec = spec_for_frame(command)
+        if spec is None or spec.parse_state is None:
             return
-        value = _state_value(command, data)
+        value = spec.parse_state(data)
         if value is None:
             return
         zone_topic = f"zone{zone_id}"
-        self.state.setdefault(zone_topic, {})[state_name] = value
-        self.mqtt.publish(f"{self.device.topic}/{zone_topic}/state/{state_name}", value)
-        if state_name == "power":
+        self.state.setdefault(zone_topic, {})[spec.name] = value
+        self.mqtt.publish(f"{self.device.topic}/{zone_topic}/state/{spec.topic}", value)
+        if spec.name == "power":
             self._publish_zone_control(zone_topic, "available" if value == "on" else "unavailable")
 
     def _publish_device_status(self, payload: str):
@@ -175,9 +151,9 @@ class DeviceRunner:
             parsed = _parse_command_topic(self.device.topic, message.topic)
             if parsed is None:
                 return
-            zone_name, command_name = parsed
+            zone_name, command_name, spec = parsed
             payload = message.payload.decode("utf-8", "replace").strip()
-            self.command_queue.put(MqttCommand(zone_name=zone_name, command=command_name, payload=payload))
+            self.command_queue.put(MqttCommand(zone_name=zone_name, command=command_name, payload=payload, spec=spec))
 
         self.mqtt.subscribe(f"{self.device.topic}/+/cmd/+", enqueue)
         self.subscribed = True
@@ -185,7 +161,9 @@ class DeviceRunner:
     def _execute_command(self, transport, reader: FrameReader, command: "MqttCommand"):
         try:
             zone_id = _zone_number(command.zone_name)
-            frame = self._build_command_frame(zone_id, command)
+            if command.spec.build_command is None:
+                raise ValueError(f"{command.command} is read-only")
+            frame = command.spec.build_command(zone_id, command.payload)
             if not self._command_allowed(command):
                 self._publish_command_event(command, "rejected: zone control unavailable")
                 return
@@ -200,33 +178,13 @@ class DeviceRunner:
             self._publish_command_event(command, f"accepted: tx {hex_bytes(frame)}")
         else:
             self._publish_command_event(command, f"ack timeout: tx {hex_bytes(frame)}")
-        if command.command == "power":
+        if command.spec.burst_after_command:
             self._collect(transport, reader, self.device.polling.burst_collection_seconds)
-
-    def _build_command_frame(self, zone_id: int, command: "MqttCommand") -> bytes:
-        payload = command.payload.strip()
-        if command.command == "power":
-            value = payload.lower()
-            if value not in ("on", "standby"):
-                raise ValueError("power must be on or standby")
-            alias = zone_rc5_alias(zone_id, "power-on" if value == "on" else "power-off")
-            return rc5_frame_from_alias(zone_id, alias)
-        if command.command == "source":
-            return rc5_frame_from_alias(zone_id, source_to_rc5_alias(zone_id, payload))
-        if command.command == "volume":
-            return build_frame(zone_id, 0x0D, [volume_to_byte(zone_id, payload)])
-        if command.command == "mute":
-            value = payload.lower()
-            if value not in ("on", "off"):
-                raise ValueError("mute must be on or off")
-            alias = zone_rc5_alias(zone_id, f"mute-{value}")
-            return rc5_frame_from_alias(zone_id, alias)
-        raise ValueError(f"unsupported command {command.command}")
 
     def _command_allowed(self, command: "MqttCommand") -> bool:
         if not self.device.commands.reject_when_unavailable:
             return True
-        if command.command == "power":
+        if not command.spec.power_required:
             return True
         zone_state = self.state.get(command.zone_name, {})
         return zone_state.get("power") == "on"
@@ -269,26 +227,15 @@ def _zone_number(zone_name: str) -> int:
     return int(normalized, 10)
 
 
-def _state_value(command: int, data: bytes) -> str | None:
-    if command == 0x00 and len(data) == 1:
-        return "on" if data[0] == 0x01 else "standby"
-    if command == 0x0D and len(data) == 2:
-        return str(data[0] + 0.5 if data[1] == 0x05 else data[0])
-    if command == 0x0E and len(data) == 1:
-        return "muted" if data[0] == 0x00 else "unmuted"
-    if command == 0x1D and len(data) == 1:
-        return SOURCE_MAP.get(data[0], f"0x{data[0]:02X}")
-    return None
-
-
 @dataclass(frozen=True)
 class MqttCommand:
     zone_name: str
     command: str
     payload: str
+    spec: MqttSpec
 
 
-def _parse_command_topic(device_topic: str, topic: str) -> tuple[str, str] | None:
+def _parse_command_topic(device_topic: str, topic: str) -> tuple[str, str, MqttSpec] | None:
     prefix = device_topic.strip("/")
     parts = topic.strip("/").split("/")
     prefix_parts = prefix.split("/")
@@ -297,7 +244,10 @@ def _parse_command_topic(device_topic: str, topic: str) -> tuple[str, str] | Non
     tail = parts[len(prefix_parts) :]
     if len(tail) != 3 or tail[1] != "cmd":
         return None
-    return tail[0], tail[2]
+    spec = command_spec_for_topic(tail[2])
+    if spec is None:
+        return None
+    return tail[0], tail[2], spec
 
 
 def _is_expected_ack(raw: bytes, frame: bytes, expected_rc5: bytes | None) -> bool:
