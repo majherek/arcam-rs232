@@ -1,6 +1,6 @@
 # arcam-rs232
 
-Command-line RS232/TCP decoder and controller for Arcam AVR500, AVR600 and AV888 receivers.
+RS232/TCP command-line tools and MQTT automation daemon for Arcam AVR500, AVR600 and AV888 receivers.
 
 This project implements parts of the Arcam custom-install protocol described in:
 
@@ -10,7 +10,16 @@ Protocol reference PDF:
 
 https://www.arcam.co.uk/ugc/tor/av888/RS232/AVR600_RS232_SH217_E_7.0.pdf
 
-It can run as a sniffer for status frames, decode responses, send direct RS232 commands, and emulate IR remote RC5 commands through the documented `Simulate RC5 IR Command` command (`0x08`).
+It provides two main entry points:
+
+- `arcam`: command-line RS232/TCP sniffer, decoder and controller.
+- `arcam-daemon`: long-running MQTT bridge for home automation systems such as openHAB.
+
+The CLI can sniff status frames, decode responses, send direct RS232 commands,
+and emulate IR remote RC5 commands through the documented `Simulate RC5 IR
+Command` command (`0x08`). The daemon keeps receiver state in MQTT, accepts MQTT
+commands, supports multiple devices, and handles receivers that are physically
+offline most of the time.
 
 ## Supported Connections
 
@@ -45,7 +54,7 @@ source .venv/bin/activate
 pip install pyserial
 ```
 
-Run the tool:
+Run the CLI:
 
 ```bash
 uv run arcam --help
@@ -70,7 +79,187 @@ The protocol code is also importable as a Python package for daemon or automatio
 from arcam_rs232 import ArcamDecoder, FrameReader, request_frame
 ```
 
+## MQTT Daemon
+
+The MQTT daemon entry point validates configuration, lists MQTT fields, and runs
+the long-lived bridge:
+
+```bash
+uv run arcam-daemon --config config.example.yaml --print-config
+```
+
+List MQTT fields that can be used in zone `core` and `extended` config:
+
+```bash
+uv run arcam-daemon --list-specs
+```
+
+The daemon can also publish its MQTT availability status and exit:
+
+```bash
+uv run arcam-daemon --config config.example.yaml --once
+```
+
+The daemon publishes `arcam/daemon = online` on connect, sets MQTT LWT to
+`offline`, and publishes `offline` before clean shutdown.
+
+It also starts a runner for each configured device. The runner connects to the
+configured serial/TCP transport, publishes device availability, reads the core
+state for each configured zone, and keeps the connection alive with configurable
+`power` heartbeats:
+
+```text
+arcam/daemon = online|offline
+arcam/av888/status/device = online|offline
+arcam/av888/zone1/status/control = available|unavailable|stale|unknown
+arcam/av888/zone1/state/power = on|standby
+arcam/av888/zone1/state/source = AV|PVR|SAT|...
+arcam/av888/zone1/state/volume = 11.5
+arcam/av888/zone1/state/mute = muted|unmuted
+```
+
+The daemon subscribes to the core command topics:
+
+```text
+arcam/av888/zone1/cmd/power = on|standby
+arcam/av888/zone1/cmd/source = AV|PVR|SAT|...
+arcam/av888/zone1/cmd/volume = 11.5
+arcam/av888/zone1/cmd/mute = on|off
+```
+
+Use the same topic shape for `zone2` and `zone3`. Zone power commands are
+accepted whenever the device is online. Other zone commands are accepted only
+when that zone's `state/power` is `on`.
+
+State is published only from real ARCAM status frames/responses, not from RC5
+acknowledgements.
+
+The MQTT runtime is backed by a command/state registry. Zone `core` and
+`extended` lists in the YAML config decide which values are requested at
+startup. List all available fields with:
+
+```bash
+uv run arcam-daemon --list-specs
+```
+
+Current fields:
+
+```text
+name            topic           read  write  values
+--------------  --------------  ----  -----  -----------------------------------
+power           power           yes   yes    on|standby
+source          source          yes   yes    source name, e.g. AV|PVR|SAT
+volume          volume          yes   yes    numeric dB value
+mute            mute            yes   yes    on|off command, muted|unmuted state
+room-eq         room_eq         yes   yes    on|off
+dolby-volume    dolby_volume    yes   yes    off|music|movie
+direct          direct          yes   yes    on|off
+decode-2ch      decode_2ch      yes   no     read-only decode mode
+decode-mch      decode_mch      yes   no     read-only decode mode
+incoming-audio  incoming_audio  yes   no     read-only audio format
+sample-rate     sample_rate     yes   no     read-only sample rate
+audio-input     audio_input     yes   no     read-only audio input type
+video-input     video_input     yes   no     read-only video input type
+```
+
+## Deployment
+
+MQTT username and password can be provided directly, through environment
+variables, or through files. Use only one source per field.
+
+```yaml
+mqtt:
+  username: arcam
+  # username_env: ARCAM_MQTT_USERNAME
+  # username_file: /run/secrets/arcam_mqtt_username
+
+  password_env: ARCAM_MQTT_PASSWORD
+  # password: change-me
+  # password_file: /run/secrets/arcam_mqtt_password
+```
+
+Docker Compose example:
+
+```bash
+cp config.av888.example.yaml config.yaml
+# edit config.yaml
+export ARCAM_MQTT_PASSWORD='change-me'
+docker compose -f docker-compose.example.yml up -d
+```
+
+Prebuilt Docker images can be published to GitHub Container Registry through the
+included GitHub Actions workflow:
+
+```text
+ghcr.io/<owner>/arcam-rs232:latest
+ghcr.io/<owner>/arcam-rs232:v0.1.5
+ghcr.io/<owner>/arcam-rs232:0.1.5
+ghcr.io/<owner>/arcam-rs232:0.1
+ghcr.io/<owner>/arcam-rs232:<git-sha>
+```
+
+Example:
+
+```bash
+docker pull ghcr.io/majherek/arcam-rs232:latest
+docker pull ghcr.io/majherek/arcam-rs232:v0.1.5
+```
+
+The Docker image is built from the Python wheel produced by `uv build`, then the
+wheel is installed into the runtime image. The Python distribution is still one
+package, `arcam-rs232`, and it installs multiple console scripts:
+
+```text
+arcam
+arcam-rs232
+arcam-daemon
+```
+
+`uv build` produces the normal Python distribution artifacts in `dist/`:
+
+```text
+arcam_rs232-<version>-py3-none-any.whl
+arcam_rs232-<version>.tar.gz
+```
+
+The `Python release artifacts` GitHub Actions workflow builds these artifacts
+and attaches them to GitHub Releases for version tags such as `v0.1.5`.
+
+Release checklist:
+
+```bash
+# update pyproject.toml version first
+git tag v0.1.5
+git push origin v0.1.5
+```
+
+systemd example files are in `packaging/`:
+
+```text
+packaging/arcam-rs232.service
+packaging/arcam-rs232.env.example
+```
+
+Install your edited config as `/etc/arcam-rs232/config.yaml` and the environment
+file as `/etc/arcam-rs232/arcam-rs232.env`.
+
+## openHAB
+
+Example openHAB Generic MQTT files are in `openhab/`:
+
+```text
+openhab/arcam-av888.things
+openhab/arcam-av888.items
+openhab/arcam-av888.sitemap
+```
+
+They define AV888 status, Zone 1 controls and read-only audio state, plus Zone 2
+and Zone 3 power controls. The sitemap uses daemon/device/zone status visibility.
+
 ## Basic Usage
+
+The examples below use the `arcam` command-line tool directly. Use this for
+manual testing, decoding, sniffing and one-off commands.
 
 Sniff/listen on a serial port:
 

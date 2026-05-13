@@ -12,6 +12,7 @@ from .protocol import (
     hex_bytes,
     request_frame,
 )
+from .config import ConfigError, DaemonConfig, DeviceConfig, MqttConfig, load_config
 
 __all__ = [
     "END",
@@ -24,4 +25,9 @@ __all__ = [
     "build_rc5_frame",
     "hex_bytes",
     "request_frame",
+    "ConfigError",
+    "DaemonConfig",
+    "DeviceConfig",
+    "MqttConfig",
+    "load_config",
 ]

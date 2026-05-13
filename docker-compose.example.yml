@@ -1,0 +1,10 @@
+services:
+  arcam-rs232:
+    build: .
+    container_name: arcam-rs232
+    restart: unless-stopped
+    environment:
+      ARCAM_MQTT_PASSWORD: ${ARCAM_MQTT_PASSWORD:?set ARCAM_MQTT_PASSWORD}
+    volumes:
+      - ./config.yaml:/config/config.yaml:ro
+    command: ["--config", "/config/config.yaml"]

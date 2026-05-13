@@ -1,0 +1,83 @@
+# Example AV888 daemon configuration. Replace all hosts, ports, and credentials
+# with values from your own network before using it.
+
+mqtt:
+  host: mqtt.example.local
+  port: 8883
+  username: arcam
+  username_env: null
+  username_file: null
+  password_env: ARCAM_MQTT_PASSWORD
+  password: null
+  password_file: null
+  tls:
+    enabled: true
+    ca_file: null
+    cert_file: null
+    key_file: null
+    insecure: false
+  client_id: arcam-rs232-av888
+  daemon_topic: arcam/daemon
+  retain: true
+  qos: 0
+
+devices:
+  av888:
+    model: av888
+    topic: arcam/av888
+
+    transport:
+      type: tcp
+      host: arcam-rs232.example.local
+      port: 8899
+      timeout_seconds: 1.0
+
+    polling:
+      heartbeat_seconds: 5
+      missed_heartbeats_limit: 2
+      offline_retry_seconds: 10
+      offline_backoff_max_seconds: 60
+      core_refresh_seconds: 30
+      burst_collection_seconds: 5
+
+    commands:
+      ack_timeout_seconds: 2
+      reject_when_unavailable: true
+      update_state_from_ack: false
+
+    zones:
+      zone1:
+        enabled: true
+        control_requires_power_on: true
+        power_command_allowed_when_device_online: true
+        core:
+          - power
+          - source
+          - volume
+          - mute
+        extended:
+          - room-eq
+          - dolby-volume
+          - direct
+          - decode-2ch
+          - decode-mch
+          - incoming-audio
+          - sample-rate
+          - audio-input
+          - video-input
+
+      zone2:
+        enabled: true
+        control_requires_power_on: true
+        power_command_allowed_when_device_online: true
+        core:
+          - power
+        extended: []
+
+      zone3:
+        enabled: true
+        control_requires_power_on: true
+        power_command_allowed_when_device_online: true
+        core:
+          - power
+        extended: []

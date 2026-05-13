@@ -1,5 +1,9 @@
 import socket
 import sys
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from .config import TransportConfig
 
 try:
     import serial
@@ -58,4 +62,15 @@ def make_transport(args):
         return SerialTransport(args.serial, args.baudrate, args.timeout)
     raise SystemExit('Provide --serial /dev/ttyUSB0 or --host 192.168.1.50 --port 8899')
 
+
+def make_config_transport(config: "TransportConfig"):
+    if config.type == "tcp":
+        if config.host is None or config.port is None:
+            raise ValueError("TCP transport requires host and port")
+        return TcpTransport(config.host, config.port, config.timeout_seconds)
+    if config.type == "serial":
+        if config.serial_port is None:
+            raise ValueError("Serial transport requires port")
+        return SerialTransport(config.serial_port, config.baudrate, config.timeout_seconds)
+    raise ValueError(f"Unsupported transport type: {config.type}")
 
