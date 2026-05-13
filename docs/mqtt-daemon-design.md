@@ -97,7 +97,7 @@ status/last_seen = ISO-8601 timestamp
 status/last_error = text
 ```
 
-`status/device` means whether the Arcam device is reachable and responding. It is not the same as Zone 1 power.
+`status/device` means whether the Arcam device is reachable and responding. It is not the same as Zone 1 power. For TCP RS232-to-Ethernet converters, a successful TCP connection is not enough to publish `online`; the daemon publishes `online` only after it receives a valid Arcam response/status frame.
 `status/last_seen` and `status/last_error` are planned diagnostics topics.
 
 ## Zone Topics

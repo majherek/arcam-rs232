@@ -20,6 +20,7 @@ class DeviceRunner:
     state: dict[str, dict[str, str]] = field(default_factory=dict)
     command_queue: Queue["MqttCommand"] = field(default_factory=Queue)
     subscribed: bool = False
+    published: dict[str, str] = field(default_factory=dict)
 
     def run_forever(self):
         retry_delay = self.device.polling.offline_retry_seconds
@@ -43,10 +44,11 @@ class DeviceRunner:
         missed = 0
         try:
             print(f"{self.device.id}: connected to {transport.label}")
-            self._publish_device_status(ONLINE)
-            self._publish_all_zone_control("unknown")
             self._subscribe_commands()
-            self._refresh_configured_state(transport, reader)
+            if not self._refresh_configured_state(transport, reader):
+                raise TimeoutError("no bootstrap response from device")
+            self._publish_device_status(ONLINE)
+            self._publish_unknown_control_for_missing_power()
 
             next_heartbeat = time.monotonic()
             while not self.stop_requested:
@@ -76,7 +78,8 @@ class DeviceRunner:
             self._publish_all_zone_control("stale")
             self._discard_pending_commands()
 
-    def _refresh_configured_state(self, transport, reader: FrameReader):
+    def _refresh_configured_state(self, transport, reader: FrameReader) -> bool:
+        seen = False
         for zone_name, zone in self.device.zones.items():
             if not zone.enabled:
                 continue
@@ -85,7 +88,8 @@ class DeviceRunner:
                 if not spec.can_read:
                     continue
                 transport.write(request_frame(zone_id, spec.request_command))
-                self._collect(transport, reader, self.device.transport.timeout_seconds)
+                seen = self._collect(transport, reader, self.device.transport.timeout_seconds) or seen
+        return seen
 
     def _poll_power(self, transport, reader: FrameReader) -> bool:
         seen = False
@@ -131,7 +135,7 @@ class DeviceRunner:
             self._publish_zone_control(zone_topic, "available" if value == "on" else "unavailable")
 
     def _publish_device_status(self, payload: str):
-        self.mqtt.publish(f"{self.device.topic}/status/device", payload)
+        self._publish_retained(f"{self.device.topic}/status/device", payload)
 
     def _publish_all_zone_control(self, payload: str):
         for zone_name, zone in self.device.zones.items():
@@ -139,7 +143,20 @@ class DeviceRunner:
                 self._publish_zone_control(zone_name, payload)
 
     def _publish_zone_control(self, zone_name: str, payload: str):
-        self.mqtt.publish(f"{self.device.topic}/{zone_name}/status/control", payload)
+        self._publish_retained(f"{self.device.topic}/{zone_name}/status/control", payload)
+
+    def _publish_unknown_control_for_missing_power(self):
+        for zone_name, zone in self.device.zones.items():
+            if not zone.enabled:
+                continue
+            if self.state.get(zone_name, {}).get("power") is None:
+                self._publish_zone_control(zone_name, "unknown")
+
+    def _publish_retained(self, topic: str, payload: str):
+        if self.published.get(topic) == payload:
+            return
+        self.mqtt.publish(topic, payload)
+        self.published[topic] = payload
 
     def _subscribe_commands(self):
         if self.subscribed:
