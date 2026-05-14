@@ -7,6 +7,8 @@
   link has been quiet for `heartbeat_seconds`.
 - Added `cmd/decode_2ch_mode`, which sets a target 2ch decode mode by cycling
   RC5 `mode` atomically after checking `audio_input=Analogue`.
+- Adjusted `cmd/decode_2ch_mode` to send one initial RC5 `mode` press to enter
+  Arcam's mode selection UI, then cycle to the target with 0.5 s between presses.
 
 ## v0.3.0
 
