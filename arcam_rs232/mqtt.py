@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import ssl
 import logging
+import threading
 import time
 from dataclasses import dataclass
 from typing import Callable
@@ -26,6 +27,7 @@ class MqttBridge:
     def __init__(self, config: MqttConfig):
         self.config = config
         self._subscriptions: dict[str, Callable[[mqtt.MQTTMessage], None]] = {}
+        self._subscriptions_lock = threading.RLock()
         self._disconnect_times: list[float] = []
         self.client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2, client_id=config.client_id)
         self.client.on_message = self._on_message
@@ -68,7 +70,8 @@ class MqttBridge:
         return PublishResult(topic=topic, payload=payload)
 
     def subscribe(self, topic: str, callback: Callable[[mqtt.MQTTMessage], None]):
-        self._subscriptions[topic] = callback
+        with self._subscriptions_lock:
+            self._subscriptions[topic] = callback
         self.client.subscribe(topic, qos=self.config.qos)
         LOGGER.info("MQTT subscribe topic=%s", topic)
 
@@ -82,7 +85,9 @@ class MqttBridge:
         self.client.tls_insecure_set(config.tls.insecure)
 
     def _on_message(self, client, userdata, message: mqtt.MQTTMessage):
-        for topic_filter, callback in self._subscriptions.items():
+        with self._subscriptions_lock:
+            subscriptions = tuple(self._subscriptions.items())
+        for topic_filter, callback in subscriptions:
             if mqtt.topic_matches_sub(topic_filter, message.topic):
                 try:
                     LOGGER.debug(
@@ -97,7 +102,9 @@ class MqttBridge:
 
     def _on_connect(self, client, userdata, flags, reason_code, properties):
         LOGGER.info("MQTT connected reason=%s", reason_code)
-        for topic in self._subscriptions:
+        with self._subscriptions_lock:
+            topics = tuple(self._subscriptions)
+        for topic in topics:
             client.subscribe(topic, qos=self.config.qos)
             LOGGER.info("MQTT resubscribe topic=%s", topic)
         self.publish_async(self.config.daemon_topic, ONLINE)
