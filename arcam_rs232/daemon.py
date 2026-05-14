@@ -6,6 +6,7 @@ import time
 from dataclasses import asdict
 from typing import Any
 
+from . import package_version
 from .config import ConfigError, load_config
 from .mqtt import MqttBridge
 from .registry import MQTT_SPECS
@@ -16,6 +17,7 @@ LOGGER = logging.getLogger(__name__)
 
 def build_parser():
     parser = argparse.ArgumentParser(description="Arcam RS232 MQTT daemon")
+    parser.add_argument("--version", action="version", version=f"arcam-daemon {package_version()}")
     parser.add_argument("--config", default="config.example.yaml", help="Path to daemon YAML configuration")
     parser.add_argument("--print-config", action="store_true", help="Load, validate, and print normalized config as JSON")
     parser.add_argument("--list-specs", action="store_true", help="List MQTT state/command specs usable in zone core/extended")

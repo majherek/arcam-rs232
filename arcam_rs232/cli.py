@@ -4,6 +4,7 @@ import socket
 import sys
 import time
 
+from . import package_version
 from .protocol import (
     DIRECT_GET_COMMANDS,
     DIRECT_SET_COMMANDS,
@@ -147,6 +148,7 @@ def build_action_frame(args):
 
 def build_parser():
     p = argparse.ArgumentParser(description='Arcam AVR500/600/AV888 RS232 sniffer/decoder + sender')
+    p.add_argument('--version', action='version', version=f'arcam-rs232 {package_version()}')
     transport = p.add_mutually_exclusive_group(required=False)
     transport.add_argument('--serial', help='Serial port, e.g. /dev/ttyUSB0 or COM3')
     transport.add_argument('--host', help='TCP converter IP address or hostname')

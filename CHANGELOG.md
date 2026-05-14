@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.4.1
+
+- Fixed an MQTT subscription race during daemon startup/reconnect where the
+  Paho network thread could iterate subscriptions while the daemon was still
+  registering command topics, causing `dictionary changed size during iteration`
+  in Docker.
+
 ## v0.4.0
 
 - Make heartbeat polling idle-based: any received ARCAM frame or local command
