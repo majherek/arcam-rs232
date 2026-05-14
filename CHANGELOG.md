@@ -9,6 +9,8 @@
   RC5 `mode` atomically after checking `audio_input=Analogue`.
 - Adjusted `cmd/decode_2ch_mode` to send one initial RC5 `mode` press to enter
   Arcam's mode selection UI, then cycle to the target with 0.5 s between presses.
+- `cmd/decode_2ch_mode` no longer waits for RC5 ACK between mode presses; it
+  sends presses at the configured 0.5 s cadence while still collecting frames.
 
 ## v0.3.0
 

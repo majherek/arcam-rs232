@@ -353,7 +353,6 @@ class DeviceRunner:
         presses = steps + 1
 
         frame = rc5_frame_from_alias(zone_id, "mode")
-        expected_rc5 = frame[4:6]
         LOGGER.info(
             "%s: cycling decode-2ch from %s to %s with %d RC5 mode step(s) and %d press(es)",
             self.device.id,
@@ -366,11 +365,8 @@ class DeviceRunner:
             self._trace_tx(f"{command.zone_name}/decode-2ch-mode press {press + 1}/{presses}", frame)
             transport.write(frame)
             self._mark_activity()
-            if not self._collect_command_response(transport, reader, frame, expected_rc5):
-                self._publish_command_event(command, f"ack timeout after press {press + 1}/{presses}: tx {hex_bytes(frame)}")
-                return
             if press + 1 < presses:
-                time.sleep(DECODE_2CH_MODE_PRESS_DELAY_SECONDS)
+                self._collect(transport, reader, DECODE_2CH_MODE_PRESS_DELAY_SECONDS)
 
         self._collect(transport, reader, min(1.0, self.device.polling.burst_collection_seconds))
         self._request_state(transport, reader, command.zone_name, "decode-2ch")
