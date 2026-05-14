@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## v0.4.0
 
 - Make heartbeat polling idle-based: any received ARCAM frame or local command
   activity resets the heartbeat timer, so `get power` is sent only after the
