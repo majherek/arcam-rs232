@@ -50,7 +50,7 @@ class MqttSpec:
 
     @property
     def can_write(self) -> bool:
-        return self.build_command is not None
+        return self.build_command is not None or self.name == "decode-2ch-mode"
 
 
 def normalize_spec_name(value: str) -> str:
@@ -215,6 +215,7 @@ MQTT_SPECS = (
     MqttSpec("subwoofer-trim", "subwoofer_trim", "numeric dB value in 0.25 dB steps, -10.0..10.0", 0x3F, 0x3F, _quarter_db_value, _build_subwoofer_trim),
     MqttSpec("sub-stereo-trim", "sub_stereo_trim", "numeric dB value in 0.25 dB steps, -10.0..0.0", 0x45, 0x45, _sub_stereo_trim_value, _build_sub_stereo_trim),
     MqttSpec("rc5", "rc5", "named RC5 alias, e.g. mode|display-off|volume-up", None, None, None, _build_rc5),
+    MqttSpec("decode-2ch-mode", "decode_2ch_mode", "target 2ch decode mode name or code, cycled via RC5 mode", None, None, None, None),
     MqttSpec("decode-2ch", "decode_2ch", "read-only decode mode", 0x10, 0x10, _mapped_value(DECODE_2CH), None),
     MqttSpec("decode-mch", "decode_mch", "read-only decode mode", 0x11, 0x11, _mapped_value(DECODE_MCH), None),
     MqttSpec("incoming-audio", "incoming_audio", "read-only audio format", 0x43, 0x43, _incoming_audio_value, None),

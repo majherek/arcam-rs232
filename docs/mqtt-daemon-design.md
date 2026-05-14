@@ -165,6 +165,17 @@ Generic RC5:
 cmd/rc5 = named RC5 alias, for example mode
 ```
 
+2ch decode mode helper:
+
+```text
+state/decode_2ch = current 2ch decode mode
+cmd/decode_2ch_mode = target mode name or code
+```
+
+`cmd/decode_2ch_mode` checks that `audio_input` is `Analogue`, reads the current
+`decode_2ch` mode, then sends enough RC5 `mode` commands to reach the target
+mode using the observed AV888 cycle order.
+
 Mute:
 
 ```text

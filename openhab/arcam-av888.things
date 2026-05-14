@@ -80,7 +80,8 @@ Thing mqtt:topic:arcamAV888 "Arcam AV888" (mqtt:broker:mybroker) [
             commandTopic="arcam/av888/zone1/cmd/rc5"
         ]
         Type string : zone1_decode_2ch "Zone 1 Decode 2ch" [
-            stateTopic="arcam/av888/zone1/state/decode_2ch"
+            stateTopic="arcam/av888/zone1/state/decode_2ch",
+            commandTopic="arcam/av888/zone1/cmd/decode_2ch_mode"
         ]
         Type string : zone1_decode_mch "Zone 1 Decode MCH" [
             stateTopic="arcam/av888/zone1/state/decode_mch"

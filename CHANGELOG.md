@@ -5,6 +5,8 @@
 - Make heartbeat polling idle-based: any received ARCAM frame or local command
   activity resets the heartbeat timer, so `get power` is sent only after the
   link has been quiet for `heartbeat_seconds`.
+- Added `cmd/decode_2ch_mode`, which sets a target 2ch decode mode by cycling
+  RC5 `mode` atomically after checking `audio_input=Analogue`.
 
 ## v0.3.0
 

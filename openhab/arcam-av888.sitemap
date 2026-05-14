@@ -42,11 +42,20 @@ sitemap arcam_av888 label="Arcam AV888"
         Switch item=Arcam_AV888_Zone1_Direct visibility=[Arcam_AV888_Zone1_Control=="available"]
         Setpoint item=Arcam_AV888_Zone1_Subwoofer_Trim visibility=[Arcam_AV888_Zone1_Control=="available"] minValue=-10 maxValue=10 step=0.25
         Setpoint item=Arcam_AV888_Zone1_Sub_Stereo_Trim visibility=[Arcam_AV888_Zone1_Control=="available"] minValue=-10 maxValue=0 step=0.25
+        Selection item=Arcam_AV888_Zone1_Decode_2ch visibility=[Arcam_AV888_Zone1_Control=="available"] mappings=[
+            Stereo="Stereo",
+            "Dolby Pro Logic Emulation"="Dolby PL",
+            "Pro Logic II/x Movie"="PLII Movie",
+            "Pro Logic II/x Music"="PLII Music",
+            "Pro Logic II Matrix"="PLII Matrix",
+            "Pro Logic II Game"="PLII Game",
+            "Neo:6 Cinema"="Neo:6 Cinema",
+            "Neo:6 Music"="Neo:6 Music"
+        ]
         Switch item=Arcam_AV888_Zone1_RC5 visibility=[Arcam_AV888_Zone1_Control=="available"] mappings=[mode="Mode"]
     }
 
     Frame label="Zone 1 status" visibility=[Arcam_Daemon_Status==ON AND Arcam_AV888_Device_Status==ON] {
-        Text item=Arcam_AV888_Zone1_Decode_2ch
         Text item=Arcam_AV888_Zone1_Decode_MCH
         Text item=Arcam_AV888_Zone1_Incoming_Audio
         Text item=Arcam_AV888_Zone1_Sample_Rate

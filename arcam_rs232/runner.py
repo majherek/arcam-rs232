@@ -10,11 +10,66 @@ from typing import Callable
 
 from .config import DeviceConfig
 from .mqtt import OFFLINE, ONLINE, MqttBridge
-from .protocol import FrameReader, hex_bytes, request_frame
-from .registry import MqttSpec, command_spec_for_topic, spec_for_frame, specs_for_names
+from .protocol import FrameReader, hex_bytes, rc5_frame_from_alias, request_frame
+from .registry import MqttSpec, command_spec_for_topic, normalize_spec_name, spec_by_name, spec_for_frame, specs_for_names
 from .transport import make_config_transport
 
 LOGGER = logging.getLogger(__name__)
+
+DECODE_2CH_MODE_ORDER = (
+    "Stereo",
+    "Dolby Pro Logic Emulation",
+    "Pro Logic II/x Movie",
+    "Pro Logic II/x Music",
+    "Pro Logic II Matrix",
+    "Pro Logic II Game",
+    "Neo:6 Cinema",
+    "Neo:6 Music",
+)
+
+DECODE_2CH_MODE_ALIASES = {
+    "0x01": "Stereo",
+    "1": "Stereo",
+    "stereo": "Stereo",
+    "0x02": "Pro Logic II/x Movie",
+    "2": "Pro Logic II/x Movie",
+    "pro-logic-ii/x-movie": "Pro Logic II/x Movie",
+    "pro-logic-ii-x-movie": "Pro Logic II/x Movie",
+    "pro-logic-iix-movie": "Pro Logic II/x Movie",
+    "plii-movie": "Pro Logic II/x Movie",
+    "movie": "Pro Logic II/x Movie",
+    "0x03": "Pro Logic II/x Music",
+    "3": "Pro Logic II/x Music",
+    "pro-logic-ii/x-music": "Pro Logic II/x Music",
+    "pro-logic-ii-x-music": "Pro Logic II/x Music",
+    "pro-logic-iix-music": "Pro Logic II/x Music",
+    "plii-music": "Pro Logic II/x Music",
+    "music": "Pro Logic II/x Music",
+    "0x04": "Pro Logic II Matrix",
+    "4": "Pro Logic II Matrix",
+    "pro-logic-ii-matrix": "Pro Logic II Matrix",
+    "matrix": "Pro Logic II Matrix",
+    "0x05": "Pro Logic II Game",
+    "5": "Pro Logic II Game",
+    "pro-logic-ii-game": "Pro Logic II Game",
+    "game": "Pro Logic II Game",
+    "0x06": "Dolby Pro Logic Emulation",
+    "6": "Dolby Pro Logic Emulation",
+    "dolby-pro-logic-emulation": "Dolby Pro Logic Emulation",
+    "pro-logic-emulation": "Dolby Pro Logic Emulation",
+    "emulation": "Dolby Pro Logic Emulation",
+    "0x07": "Neo:6 Cinema",
+    "7": "Neo:6 Cinema",
+    "neo:6-cinema": "Neo:6 Cinema",
+    "neo-6-cinema": "Neo:6 Cinema",
+    "neo6-cinema": "Neo:6 Cinema",
+    "cinema": "Neo:6 Cinema",
+    "0x08": "Neo:6 Music",
+    "8": "Neo:6 Music",
+    "neo:6-music": "Neo:6 Music",
+    "neo-6-music": "Neo:6 Music",
+    "neo6-music": "Neo:6 Music",
+}
 
 
 @dataclass
@@ -232,6 +287,10 @@ class DeviceRunner:
         LOGGER.info("%s: subscribed to command topics", self.device.id)
 
     def _execute_command(self, transport, reader: FrameReader, command: "MqttCommand"):
+        if command.spec.name == "decode-2ch-mode":
+            self._execute_decode_2ch_mode_command(transport, reader, command)
+            return
+
         try:
             zone_id = _zone_number(command.zone_name)
             if command.spec.build_command is None:
@@ -262,6 +321,67 @@ class DeviceRunner:
             self._publish_command_event(command, f"ack timeout: tx {hex_bytes(frame)}")
         if command.spec.burst_after_command:
             self._collect(transport, reader, self.device.polling.burst_collection_seconds)
+
+    def _execute_decode_2ch_mode_command(self, transport, reader: FrameReader, command: "MqttCommand"):
+        try:
+            zone_id = _zone_number(command.zone_name)
+            if zone_id != 0x01:
+                raise ValueError("decode-2ch-mode is only available for Zone 1")
+            if not self._command_allowed(command):
+                self._publish_command_event(command, "rejected: zone control unavailable")
+                return
+            target = _decode_2ch_target(command.payload)
+            self._request_state(transport, reader, command.zone_name, "audio-input")
+            audio_input = self.state.get(command.zone_name, {}).get("audio-input")
+            if audio_input != "Analogue":
+                raise ValueError(f"decode-2ch-mode requires audio-input Analogue, current={audio_input or 'unknown'}")
+            self._request_state(transport, reader, command.zone_name, "decode-2ch")
+            current = self.state.get(command.zone_name, {}).get("decode-2ch")
+            if current not in DECODE_2CH_MODE_ORDER:
+                raise ValueError(f"unknown current decode-2ch mode: {current or 'unknown'}")
+        except ValueError as exc:
+            self._publish_command_event(command, f"rejected: {exc}")
+            return
+
+        current_index = DECODE_2CH_MODE_ORDER.index(current)
+        target_index = DECODE_2CH_MODE_ORDER.index(target)
+        steps = (target_index - current_index) % len(DECODE_2CH_MODE_ORDER)
+        if steps == 0:
+            self._publish_command_event(command, f"accepted: already {target}")
+            return
+
+        frame = rc5_frame_from_alias(zone_id, "mode")
+        expected_rc5 = frame[4:6]
+        LOGGER.info(
+            "%s: cycling decode-2ch from %s to %s with %d RC5 mode step(s)",
+            self.device.id,
+            current,
+            target,
+            steps,
+        )
+        for step in range(steps):
+            self._trace_tx(f"{command.zone_name}/decode-2ch-mode step {step + 1}/{steps}", frame)
+            transport.write(frame)
+            self._mark_activity()
+            if not self._collect_command_response(transport, reader, frame, expected_rc5):
+                self._publish_command_event(command, f"ack timeout after step {step + 1}/{steps}: tx {hex_bytes(frame)}")
+                return
+
+        self._collect(transport, reader, min(1.0, self.device.polling.burst_collection_seconds))
+        self._request_state(transport, reader, command.zone_name, "decode-2ch")
+        final = self.state.get(command.zone_name, {}).get("decode-2ch", "unknown")
+        self._publish_command_event(command, f"accepted: {current} -> {target}, steps={steps}, final={final}")
+
+    def _request_state(self, transport, reader: FrameReader, zone_name: str, spec_name: str) -> bool:
+        spec = spec_by_name(spec_name)
+        if spec is None or spec.request_command is None:
+            return False
+        zone_id = _zone_number(zone_name)
+        frame = request_frame(zone_id, spec.request_command)
+        self._trace_tx(f"{zone_name}/{spec.name} request", frame)
+        transport.write(frame)
+        LOGGER.debug("%s: requesting %s/%s", self.device.id, zone_name, spec.name)
+        return self._collect(transport, reader, self.device.transport.timeout_seconds)
 
     def _execute_pending_commands(self, transport, reader: FrameReader):
         while True:
@@ -355,6 +475,15 @@ def _zone_number(zone_name: str) -> int:
     if normalized.startswith("zone"):
         normalized = normalized[4:]
     return int(normalized, 10)
+
+
+def _decode_2ch_target(payload: str) -> str:
+    key = normalize_spec_name(payload)
+    target = DECODE_2CH_MODE_ALIASES.get(key)
+    if target is None:
+        choices = ", ".join(DECODE_2CH_MODE_ORDER)
+        raise ValueError(f"decode-2ch-mode must be one of: {choices}")
+    return target
 
 
 @dataclass(frozen=True)

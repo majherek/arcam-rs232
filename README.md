@@ -217,6 +217,7 @@ direct          direct          yes   yes    on|off
 subwoofer-trim  subwoofer_trim  yes   yes    numeric dB value in 0.25 dB steps, -10.0..10.0
 sub-stereo-trim sub_stereo_trim yes   yes    numeric dB value in 0.25 dB steps, -10.0..0.0
 rc5             rc5             no    yes    named RC5 alias, e.g. mode|display-off|volume-up
+decode-2ch-mode decode_2ch_mode no    yes    target 2ch decode mode name or code, cycled via RC5 mode
 decode-2ch      decode_2ch      yes   no     read-only decode mode
 decode-mch      decode_mch      yes   no     read-only decode mode
 incoming-audio  incoming_audio  yes   no     read-only audio format
