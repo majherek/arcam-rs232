@@ -66,6 +66,7 @@ class CommandConfig:
     ack_timeout_seconds: float = 2
     reject_when_unavailable: bool = True
     update_state_from_ack: bool = False
+    decode_2ch_mode_press_delay_ms: int = 300
 
 
 @dataclass(frozen=True)
@@ -204,6 +205,7 @@ def _parse_commands(raw: dict[str, Any], device_id: str) -> CommandConfig:
         ack_timeout_seconds=_float(raw, "ack_timeout_seconds", 2, ctx, minimum=0.1),
         reject_when_unavailable=_bool(raw, "reject_when_unavailable", True, ctx),
         update_state_from_ack=_bool(raw, "update_state_from_ack", False, ctx),
+        decode_2ch_mode_press_delay_ms=_int(raw, "decode_2ch_mode_press_delay_ms", 300, ctx, minimum=0),
     )
 
 

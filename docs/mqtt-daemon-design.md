@@ -175,9 +175,10 @@ cmd/decode_2ch_mode = target mode name or code
 `cmd/decode_2ch_mode` checks that `audio_input` is `Analogue`, reads the current
 `decode_2ch` mode, sends one initial RC5 `mode` press to enter Arcam's mode
 selection UI, then sends enough additional RC5 `mode` commands to reach the
-target mode using the observed AV888 cycle order. Presses are spaced by 0.5 s;
-the runner does not wait for RC5 ACK between presses, but it still collects and
-processes incoming frames during the delay.
+target mode using the observed AV888 cycle order. Presses are spaced by
+`commands.decode_2ch_mode_press_delay_ms`, defaulting to `300 ms`; the runner
+does not wait for RC5 ACK between presses, but it still collects and processes
+incoming frames during the delay.
 
 Mute:
 

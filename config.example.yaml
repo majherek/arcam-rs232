@@ -51,6 +51,7 @@ devices:
       ack_timeout_seconds: 2
       reject_when_unavailable: true
       update_state_from_ack: false
+      decode_2ch_mode_press_delay_ms: 300
 
     zones:
       zone1:
@@ -122,6 +123,7 @@ devices:
       ack_timeout_seconds: 2
       reject_when_unavailable: true
       update_state_from_ack: false
+      decode_2ch_mode_press_delay_ms: 300
 
     zones:
       zone1:

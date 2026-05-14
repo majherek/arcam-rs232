@@ -15,7 +15,6 @@ from .registry import MqttSpec, command_spec_for_topic, normalize_spec_name, spe
 from .transport import make_config_transport
 
 LOGGER = logging.getLogger(__name__)
-DECODE_2CH_MODE_PRESS_DELAY_SECONDS = 0.5
 
 DECODE_2CH_MODE_ORDER = (
     "Stereo",
@@ -366,7 +365,7 @@ class DeviceRunner:
             transport.write(frame)
             self._mark_activity()
             if press + 1 < presses:
-                self._collect(transport, reader, DECODE_2CH_MODE_PRESS_DELAY_SECONDS)
+                self._collect(transport, reader, self.device.commands.decode_2ch_mode_press_delay_ms / 1000)
 
         self._collect(transport, reader, min(1.0, self.device.polling.burst_collection_seconds))
         self._request_state(transport, reader, command.zone_name, "decode-2ch")
