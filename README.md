@@ -130,6 +130,9 @@ configured serial/TCP transport, publishes device availability after the first
 valid ARCAM status frame, reads configured state for each zone, and keeps the
 connection alive with configurable `power` heartbeats:
 
+Heartbeat polling is idle-based: the daemon sends the heartbeat only after no
+ARCAM frame or local command activity has occurred for `heartbeat_seconds`.
+
 ```text
 arcam/daemon = online|offline
 arcam/av888/status/device = online|offline

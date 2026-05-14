@@ -29,6 +29,7 @@ class DeviceRunner:
     published: dict[str, str] = field(default_factory=dict)
     wake_event: threading.Event = field(default_factory=threading.Event)
     protocol_trace: bool = False
+    last_activity: float = field(default_factory=time.monotonic)
 
     def run_forever(self):
         retry_delay = self.device.polling.offline_retry_seconds
@@ -74,7 +75,7 @@ class DeviceRunner:
             LOGGER.info("%s: bootstrap completed", self.device.id)
             self._complete_scan_requests(initial_scan_requests or [])
 
-            next_heartbeat = time.monotonic()
+            next_heartbeat = self.last_activity + self.device.polling.heartbeat_seconds
             while not self.stop_requested:
                 now = time.monotonic()
                 command_timeout = min(0.2, max(0.0, next_heartbeat - now))
@@ -84,6 +85,7 @@ class DeviceRunner:
                     command = None
                 if command is not None:
                     self._execute_command(transport, reader, command)
+                    next_heartbeat = self.last_activity + self.device.polling.heartbeat_seconds
                     continue
                 if self.wake_event.is_set():
                     self.wake_event.clear()
@@ -93,19 +95,23 @@ class DeviceRunner:
                         self._refresh_configured_state(transport, reader)
                     finally:
                         self._complete_scan_requests(scan_requests)
-                    next_heartbeat = time.monotonic() + self.device.polling.heartbeat_seconds
+                    next_heartbeat = self.last_activity + self.device.polling.heartbeat_seconds
                     continue
-                self._collect(transport, reader, 0.05)
+                if self._collect(transport, reader, 0.05):
+                    missed = 0
+                    next_heartbeat = self.last_activity + self.device.polling.heartbeat_seconds
+                    continue
                 if time.monotonic() < next_heartbeat:
                     continue
                 got_response = self._poll_power(transport, reader)
                 if got_response:
                     missed = 0
+                    next_heartbeat = self.last_activity + self.device.polling.heartbeat_seconds
                 else:
                     missed += 1
                     if missed >= self.device.polling.missed_heartbeats_limit:
                         raise TimeoutError("missed heartbeat responses")
-                next_heartbeat = time.monotonic() + self.device.polling.heartbeat_seconds
+                    next_heartbeat = time.monotonic() + self.device.polling.heartbeat_seconds
         finally:
             transport.close()
             self._publish_device_status(OFFLINE)
@@ -157,6 +163,7 @@ class DeviceRunner:
             if not chunk:
                 continue
             for raw in reader.feed(chunk):
+                self._mark_activity()
                 self._trace_rx(raw)
                 seen = True
                 self._handle_frame(raw)
@@ -247,6 +254,7 @@ class DeviceRunner:
         )
         self._trace_tx(f"{command.zone_name}/{command.command} command", frame)
         transport.write(frame)
+        self._mark_activity()
         ack_seen = self._collect_command_response(transport, reader, frame, expected_rc5)
         if ack_seen:
             self._publish_command_event(command, f"accepted: tx {hex_bytes(frame)}")
@@ -282,6 +290,7 @@ class DeviceRunner:
             if not chunk:
                 continue
             for raw in reader.feed(chunk):
+                self._mark_activity()
                 self._trace_rx(raw)
                 is_ack = _is_expected_ack(raw, frame, expected_rc5)
                 if is_ack:
@@ -336,6 +345,9 @@ class DeviceRunner:
     def _trace_rx(self, frame: bytes):
         if self.protocol_trace:
             LOGGER.info("%s: RX: %s", self.device.id, hex_bytes(frame))
+
+    def _mark_activity(self):
+        self.last_activity = time.monotonic()
 
 
 def _zone_number(zone_name: str) -> int:

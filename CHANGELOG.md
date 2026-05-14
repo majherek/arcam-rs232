@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- Make heartbeat polling idle-based: any received ARCAM frame or local command
+  activity resets the heartbeat timer, so `get power` is sent only after the
+  link has been quiet for `heartbeat_seconds`.
+
 ## v0.3.0
 
 - Fixed MQTT scan handling so the daemon does not block the Paho network loop

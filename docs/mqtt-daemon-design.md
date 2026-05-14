@@ -380,6 +380,10 @@ verify that the physical device is responding, without blocking the link with
 Zone 2/3 health checks. If Zone 1 is disabled in config, the first enabled zone
 is used as a fallback heartbeat target.
 
+Heartbeat polling is idle-based. `heartbeat_seconds` is the required quiet time
+on the ARCAM link: any received frame or local command activity resets the
+timer. The runner only sends `get power` when that quiet period has elapsed.
+
 During bootstrap and scan refreshes, queued MQTT commands are executed between
 individual ARCAM requests. User commands therefore take priority over slower
 extended state reads once enough zone state is known to validate them.
